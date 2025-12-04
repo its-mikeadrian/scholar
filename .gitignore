@@ -1,0 +1,49 @@
+# ---- SteelSync Login App: Git Ignore ----
+# Purpose: Keep secrets and local artifacts out of git
+
+
+# Environment and secrets
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+*.key
+*.pem
+*.crt
+*.p12
+
+# Local config overrides (never commit secrets)
+config/*.local.php
+config/*.secrets.php
+config/*.private.php
+
+# Logs, cache, temp
+*.log
+*.cache
+/tmp/
+temp/
+cache/
+storage/
+sessions/
+
+# PHPUnit cache
+.phpunit.result.cache
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Built assets (if you add a build step)
+public/assets/dist/
+public/assets/build/
+
+# Composer dependencies
+vendor/

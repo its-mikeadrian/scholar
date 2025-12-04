@@ -1,0 +1,17 @@
+/* Disable focus/active border highlight while keeping neutral borders */
+.form-control:focus:not(.is-invalid):not(.is-valid),
+.form-select:focus:not(.is-invalid):not(.is-valid),
+textarea.form-control:focus:not(.is-invalid):not(.is-valid) {
+  border-color: #ced4da !important;
+  /* Bootstrap's default neutral border */
+  box-shadow: none !important;
+  /* Remove glow */
+  outline: none !important;
+  /* Remove focus outline */
+}
+
+/* Also remove checkbox/radio focus glow */
+.form-check-input:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
