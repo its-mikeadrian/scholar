@@ -1,10 +1,10 @@
 <?php
+require_once __DIR__ . '/../../config/bootstrap.php';
 require_once __DIR__ . '/../../src/security.php';
 secure_session_start();
-if (empty($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url('students/login'));
-    exit;
-}
+require_once __DIR__ . '/../../src/db.php';
+
+enforce_student_profile_completed($conn);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -379,12 +379,9 @@ if (empty($_SESSION['auth_user_id'])) {
         }
     </style>
 </head>
-
 <body>
 
-
-    <?php include 'includes/navbar.php'; ?>
-
+<?php include 'includes/navbar.php'; ?>
 
     <!-- Main content: Application Tracker + Submitted Form -->
     <main style="padding: 120px 0 40px;">
