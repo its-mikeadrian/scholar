@@ -290,3 +290,550 @@ header {
                 height: 30px;
             }
         }
+/* Profile Modal Styles */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.5); 
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; 
+    padding: 30px;
+    border: none;
+    width: 90%; 
+    max-width: 500px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    color: #333;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    color: var(--primary-dark, #293D82);
+    border-bottom: 2px solid var(--secondary, #4caf50);
+    padding-bottom: 10px;
+}
+
+.close-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.close-modal:hover,
+.close-modal:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+/* History Modal Close Button */
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+}
+.close-btn:hover,
+.close-btn:focus {
+    color: #333;
+    background-color: rgba(0,0,0,0.06);
+    outline: none;
+}
+.close-btn:active {
+    transform: scale(0.95);
+}
+
+.modal .form-group {
+    margin-bottom: 20px;
+}
+
+.modal label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.modal input[type='text'],
+.modal input[type='password'],
+.modal input[type='file'] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.modal input[type='text']:focus,
+.modal input[type='password']:focus {
+    border-color: var(--primary, #1e88e5);
+    outline: none;
+}
+
+.modal button.btn {
+    padding: 12px 25px;
+    background-color: var(--primary, #1e88e5);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal button.btn:hover {
+    background-color: var(--primary-dark, #293D82);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+
+/* Improved Profile Modal Styles */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 2000; 
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: hidden; /* Prevent body scroll behind modal */
+    background-color: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(4px);
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px; /* prevent edge collision on small screens */
+}
+
+.modal-content {
+    background-color: #ffffff;
+    margin: 0 auto; 
+    padding: 30px;
+    border: none;
+    width: 90%; 
+    max-width: 480px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    color: #333;
+    max-height: 90vh;
+    overflow-y: auto; /* Scrollable content */
+    position: relative;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.modal-content h2 {
+    margin-bottom: 25px;
+    color: var(--primary-dark, #293D82);
+    border-bottom: none;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.close-modal {
+    position: absolute;
+    right: 25px;
+    top: 20px;
+    color: #999;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    line-height: 1;
+    z-index: 10;
+}
+
+.close-modal:hover {
+    color: #333;
+    transform: rotate(90deg);
+}
+
+.profile-preview-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.profile-preview-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Toast Notification Styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.toast {
+    background-color: #333;
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: toastSlideIn 0.3s forwards;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.toast.success {
+    background-color: #4caf50;
+    border-left: 6px solid #2e7d32;
+}
+
+.toast.error {
+    background-color: #f44336;
+    border-left: 6px solid #d32f2f;
+}
+
+.toast.warning {
+    background-color: #ff9800;
+    border-left: 6px solid #f57c00;
+}
+
+.toast-icon {
+    font-size: 20px;
+}
+
+.toast-message {
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+}
+
+.toast-close {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 18px;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes toastSlideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes toastSlideOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.profile-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #f0f2f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: #cbd5e1;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.modal .form-group {
+    margin-bottom: 20px;
+}
+
+.modal label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+.modal input[type='text'],
+.modal input[type='password'],
+.modal input[type='file'] {
+    width: 100%;
+    padding: 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-size: 15px;
+    transition: all 0.2s;
+    background-color: #f9fafb;
+}
+
+.modal input[type='text']:focus,
+.modal input[type='password']:focus {
+    border-color: var(--primary, #1e88e5);
+    background-color: #fff;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
+}
+
+.file-input {
+    padding: 10px !important;
+    background-color: #fff !important;
+}
+
+.modal button.btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary, #1e88e5), var(--primary-dark, #1565c0));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);
+    margin-top: 10px;
+}
+
+.modal button.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(30, 136, 229, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-height: 700px) {
+    .modal-content {
+        margin: 0 auto;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+    }
+}
+
+
+/* Toast Notification */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background-color: #333;
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 400px;
+    animation: toastSlideIn 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateX(100%);
+    font-size: 14px;
+    border-left: 4px solid transparent;
+}
+
+.toast.success {
+    background-color: #fff;
+    color: #155724;
+    border-left-color: #28a745;
+}
+
+.toast.error {
+    background-color: #fff;
+    color: #721c24;
+    border-left-color: #dc3545;
+}
+
+.toast.info {
+    background-color: #fff;
+    color: #0c5460;
+    border-left-color: #17a2b8;
+}
+
+.toast-icon {
+    font-size: 20px;
+}
+
+.toast.success .toast-icon { color: #28a745; }
+.toast.error .toast-icon { color: #dc3545; }
+.toast.info .toast-icon { color: #17a2b8; }
+
+.toast-message {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    margin-left: 8px;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes toastSlideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes toastFadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+
+/* Toast Notification Styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    background-color: #333;
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    transform: translateX(100%);
+    animation: toastSlideIn 0.3s forwards;
+    min-width: 300px;
+    max-width: 400px;
+}
+
+.toast.success {
+    background-color: #4caf50;
+    border-left: 6px solid #2e7d32;
+}
+
+.toast.error {
+    background-color: #f44336;
+    border-left: 6px solid #d32f2f;
+}
+
+.toast.warning {
+    background-color: #ff9800;
+    border-left: 6px solid #f57c00;
+}
+
+.toast-icon {
+    font-size: 20px;
+}
+
+.toast-message {
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+}
+
+.toast-close {
+    cursor: pointer;
+    opacity: 0.7;
+    font-size: 18px;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+@keyframes toastSlideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes toastSlideOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
