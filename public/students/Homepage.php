@@ -7,14 +7,25 @@ require_once __DIR__ . '/../../src/db.php';
 enforce_student_profile_completed($conn);
 
 // Fetch announcements from database
+$announcements = [];
 try {
-    $pdo = get_db_connection();
-    $stmt = $pdo->prepare('SELECT * FROM announcements ORDER BY created_at DESC');
-    $stmt->execute();
-    $announcements = $stmt->fetchAll();
+    $stmt = $conn->prepare('SELECT id, title, content, image_path, user_id, created_at FROM announcements ORDER BY created_at DESC');
+    if (!$stmt) {
+        throw new Exception('Prepare failed: ' . $conn->error);
+    }
+    
+    if (!$stmt->execute()) {
+        throw new Exception('Execute failed: ' . $stmt->error);
+    }
+    
+    $result = $stmt->get_result();
+    if ($result) {
+        $announcements = $result->fetch_all(MYSQLI_ASSOC);
+    }
+    $stmt->close();
 } catch (Exception $e) {
-    $announcements = [];
     error_log('Error fetching announcements: ' . $e->getMessage());
+    $announcements = [];
 }
 ?>
 <!DOCTYPE html>
@@ -150,8 +161,8 @@ try {
 
         .announcement-content {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
             margin-top: 30px;
         }
 
@@ -162,6 +173,53 @@ try {
             transition: var(--transition);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
             border-left: 5px solid var(--primary);
+            position: relative;
+        }
+
+        .announcement-clickable {
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .announcement-clickable::before {
+            content: '\f065';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 3rem;
+            color: white;
+            z-index: 10;
+            transition: transform 0.3s ease;
+        }
+
+        .announcement-clickable::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(30, 136, 229, 0.15);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+            border-radius: 10px;
+        }
+
+        .announcement-clickable:hover {
+            box-shadow: 0 12px 30px rgba(30, 136, 229, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .announcement-clickable:hover::before {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .announcement-clickable:hover::after {
+            opacity: 1;
         }
 
 
@@ -499,28 +557,37 @@ try {
                     <p>No announcements yet</p>
                 </div>
             <?php else: ?>
-                <!-- Show only the newest announcement -->
-                <?php $newest = $announcements[0]; ?>
-                <div class="announcement-card fade-in" style="grid-column: 1/-1;">
-                    <?php if (!empty($newest['image_path'])): ?>
-                        <img src="<?php echo htmlspecialchars('../' . $newest['image_path']); ?>" alt="<?php echo htmlspecialchars($newest['title']); ?>" style="width: 100%; border-radius: 10px; max-height: 300px; object-fit: cover; margin-bottom: 15px;">
-                        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">
-                        <!-- <strong>Posted by User ID:</strong> <?php echo htmlspecialchars($newest['user_id']); ?> • -->
-                        <strong>Date:</strong> <?php echo date('M d, Y', strtotime($newest['created_at'])); ?>
-                    </p>
+                <!-- Show up to 2 most recent announcements -->
+                <?php $displayCount = min(2, count($announcements)); ?>
+                <?php for ($i = 0; $i < $displayCount; $i++): ?>
+                    <?php $announcement = $announcements[$i]; ?>
+                    <div class="announcement-card fade-in announcement-clickable" onclick="viewAnnouncementDetail(<?php echo htmlspecialchars(json_encode($announcement)); ?>)">
+                        <?php if (!empty($announcement['image_path'])): ?>
+                            <img src="<?php echo htmlspecialchars('../' . $announcement['image_path']); ?>" alt="<?php echo htmlspecialchars($announcement['title']); ?>" style="width: 100%; border-radius: 10px; max-height: 250px; object-fit: cover; margin-bottom: 15px;">
                         <?php endif; ?>
-                    <h3><i class="fas fa-bullhorn"></i> <?php echo htmlspecialchars($newest['title']); ?></h3>
-                    
-                    <p style="margin-bottom: 15px;"><?php echo nl2br(htmlspecialchars($newest['content'])); ?></p>
-                    
-                    <?php if (count($announcements) > 1): ?>
-                        <button class="see-more-btn" id="seeMoreBtn">
-                            <i class="fas fa-eye"></i> See More Announcements (<?php echo count($announcements) - 1; ?>)
-                        </button>
-                    <?php endif; ?>
-                </div>
+                        <p style="color: #999; font-size: 0.85rem; margin-bottom: 10px;">
+                            <strong>Date:</strong> <?php echo date('M d, Y', strtotime($announcement['created_at'])); ?>
+                        </p>
+                        <h3><i class="fas fa-bullhorn"></i> <?php echo htmlspecialchars($announcement['title']); ?></h3>
+                        
+                        <p style="margin-bottom: 15px; color: #555; font-size: 0.95rem; line-height: 1.5;">
+                            <?php 
+                            $content = htmlspecialchars($announcement['content']);
+                            echo strlen($content) > 100 ? substr($content, 0, 100) . '...' : $content;
+                            ?>
+                        </p>
+                    </div>
+                <?php endfor; ?>
             <?php endif; ?>
         </div>
+        
+        <?php if (count($announcements) > 2): ?>
+            <div style="text-align: center; margin-top: 25px;">
+                <button class="see-more-btn" id="seeMoreBtn">
+                    <i class="fas fa-eye"></i> See All Announcements (<?php echo count($announcements) - 2; ?> more)
+                </button>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- Modal for other announcements -->
@@ -532,7 +599,7 @@ try {
                 <?php if (count($announcements) > 1): ?>
                     <?php for ($i = 1; $i < count($announcements); $i++): ?>
                         <?php $announcement = $announcements[$i]; ?>
-                        <div class="announcement-card fade-in">
+                        <div class="announcement-card fade-in announcement-clickable" onclick="viewAnnouncementDetail(<?php echo htmlspecialchars(json_encode($announcement)); ?>)">
                             <?php if (!empty($announcement['image_path'])): ?>
                                 <img src="<?php echo htmlspecialchars('../' . $announcement['image_path']); ?>" alt="<?php echo htmlspecialchars($announcement['title']); ?>" style="width: 100%; border-radius: 10px; max-height: 250px; object-fit: cover; margin-bottom: 15px;">
                                 <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">
@@ -546,6 +613,16 @@ try {
                         </div>
                     <?php endfor; ?>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for viewing announcement detail -->
+    <div id="announcementDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close close-detail">&times;</span>
+            <div id="announcementDetailContent">
+                <!-- Content will be populated by JavaScript -->
             </div>
         </div>
     </div>
@@ -709,13 +786,28 @@ try {
     <script src="includes/script.js"></script>
 
     <script>
+        // Utility function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper function to convert newlines to <br> tags
+        function nl2br(text) {
+            return text.replace(/\n/g, '<br>');
+        }
+
         // Modal functionality
         const modal = document.getElementById('announcementModal');
+        const detailModal = document.getElementById('announcementDetailModal');
         const seeMoreBtn = document.getElementById('seeMoreBtn');
         const closeBtn = document.querySelector('.close');
+        const closeDetailBtn = document.querySelector('.close-detail');
 
         if (seeMoreBtn) {
-            seeMoreBtn.addEventListener('click', function() {
+            seeMoreBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
                 modal.style.display = 'block';
             });
         }
@@ -726,10 +818,43 @@ try {
             });
         }
 
-        // Close modal when clicking outside of it
+        if (closeDetailBtn) {
+            closeDetailBtn.addEventListener('click', function() {
+                detailModal.style.display = 'none';
+            });
+        }
+
+        // Close modals when clicking outside of them
         window.addEventListener('click', function(event) {
             if (event.target === modal) {
                 modal.style.display = 'none';
             }
+            if (event.target === detailModal) {
+                detailModal.style.display = 'none';
+            }
         });
+
+        // Function to view announcement detail
+        function viewAnnouncementDetail(announcement) {
+            const detailContent = document.getElementById('announcementDetailContent');
+            const imageHtml = announcement.image_path ? `
+                <img src="../${announcement.image_path}" alt="${escapeHtml(announcement.title)}" style="width: 100%; border-radius: 10px; max-height: 500px; object-fit: cover; margin-bottom: 20px;">
+            ` : '';
+            
+            const date = new Date(announcement.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            detailContent.innerHTML = `
+                <div style="text-align: center;">
+                    ${imageHtml}
+                    <h2 style="color: #293D82; font-size: 2rem; margin-bottom: 10px; text-align: left;">${escapeHtml(announcement.title)}</h2>
+                    <p style="color: #999; font-size: 0.95rem; margin-bottom: 20px; text-align: left;">
+                        <strong>Date:</strong> ${date}
+                    </p>
+                    <div style="text-align: left; line-height: 1.8; color: #333; font-size: 1.05rem;">
+                        ${nl2br(escapeHtml(announcement.content))}
+                    </div>
+                </div>
+            `;
+            detailModal.style.display = 'block';
+        }
     </script>

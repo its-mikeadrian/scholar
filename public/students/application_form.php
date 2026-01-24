@@ -360,6 +360,70 @@ enforce_student_profile_completed($conn);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
             transition: all 0.3s;
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close-btn {
+            background: #e0e0e0;
+            color: #333;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #d0d0d0;
+        }
     </style>
 </head>
 
@@ -390,104 +454,139 @@ enforce_student_profile_completed($conn);
             <h2 class="scholarship-form-title">SCHOLARSHIP APPLICATION FORM</h2>
             <form class="scholarship-form-form" method="POST" action="<?php echo htmlspecialchars(route_url('students/process-application'), ENT_QUOTES); ?>" enctype="multipart/form-data">
                 <?php echo csrf_input(); ?>
-                <div class="scholarship-form-grid">
-                    <div>
-                        <label class="scholarship-form-label">Academic Level</label>
-                        <select class="scholarship-form-select">
-                            <option>1st Year</option>
-                            <option>2nd Year</option>
-                            <option>3rd Year</option>
-                            <option>4th Year</option>
-                        </select>
+                
+                <!-- Page 1: Personal Information -->
+                <div class="form-page" id="page1" style="display: block;">
+                    <div class="scholarship-form-grid">
+                        <div>
+                            <label class="scholarship-form-label">Academic Level</label>
+                            <select class="scholarship-form-select">
+                                <option>1st Year</option>
+                                <option>2nd Year</option>
+                                <option>3rd Year</option>
+                                <option>4th Year</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="scholarship-form-label">Semester</label>
+                            <input type="text" placeholder="Semester" class="scholarship-form-input" />
+                        </div>
+                        <input type="text" placeholder="First Name" class="scholarship-form-input" />
+                        <input type="text" placeholder="Last Name" class="scholarship-form-input" />
+                        <input type="text" placeholder="Middle Name" class="scholarship-form-input" />
+                        <input type="date" placeholder="dd/mm/yyyy" class="scholarship-form-input" />
+                        <input type="text" placeholder="Age" class="scholarship-form-input" />
+                        <input type="text" placeholder="Cellphone Number" class="scholarship-form-input" />
+                        <div class="scholarship-form-radio-group">
+                            <label class="scholarship-form-label">Sex</label>
+                            <input type="radio" id="male" name="sex" value="Male" class="scholarship-form-radio" /> <label for="male" class="scholarship-form-radio-label">Male</label>
+                            <input type="radio" id="female" name="sex" value="Female" class="scholarship-form-radio" /> <label for="female" class="scholarship-form-radio-label">Female</label>
+                        </div>
+                        <input type="text" placeholder="Mother's Maiden Name" class="scholarship-form-input" />
+                        <input type="text" placeholder="Occupation" class="scholarship-form-input" />
+                        <input type="text" placeholder="Father's Name" class="scholarship-form-input" />
+                        <input type="text" placeholder="Occupation" class="scholarship-form-input" />
+                        <input type="text" placeholder="Street Address" class="scholarship-form-input" />
+                        <input type="text" placeholder="House no./Bldg no." class="scholarship-form-input" />
+                        <div>
+                            <label class="scholarship-form-label">Barangay</label>
+                            <select class="scholarship-form-select">
+                                <option value="">-- Select Barangay --</option>
+                                <option>San Agustin</option>
+                                <option>San Carlos</option>
+                                <option>San Isidro</option>
+                                <option>San Jose</option>
+                                <option>San Juan</option>
+                                <option>San Nicolas</option>
+                                <option>San Roque</option>
+                                <option>San Sebastian</option>
+                                <option>Santa Catalina</option>
+                                <option>Santa Cruz Pambilog</option>
+                                <option>Santa Cruz Poblacion</option>
+                                <option>Santa Lucia</option>
+                                <option>Santa Monica</option>
+                                <option>Santa Rita</option>
+                                <option>Santo Niño</option>
+                                <option>Santo Rosario</option>
+                                <option>Santo Tomas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="scholarship-form-label">Municipality</label>
+                            <input type="text" class="scholarship-form-input" value="San Luis" readonly />
+                        </div>
+                        
                     </div>
-                    <div>
-                        <label class="scholarship-form-label">Semester</label>
-                        <input type="text" placeholder="Semester" class="scholarship-form-input" />
+                    <div class="scholarship-form-submit" style="margin-top: 32px;">
+                        <button type="button" class="scholarship-form-btn" id="nextBtn" style="background: #1e88e5;">Next</button>
                     </div>
-                    <input type="text" placeholder="First Name" class="scholarship-form-input" />
-                    <input type="text" placeholder="Last Name" class="scholarship-form-input" />
-                    <input type="text" placeholder="Middle Name" class="scholarship-form-input" />
-                    <input type="date" placeholder="dd/mm/yyyy" class="scholarship-form-input" />
-                    <input type="text" placeholder="Age" class="scholarship-form-input" />
-                    <input type="text" placeholder="Cellphone Number" class="scholarship-form-input" />
-                    <div class="scholarship-form-radio-group">
-                        <label class="scholarship-form-label">Sex</label>
-                        <input type="radio" id="male" name="sex" value="Male" class="scholarship-form-radio" /> <label for="male" class="scholarship-form-radio-label">Male</label>
-                        <input type="radio" id="female" name="sex" value="Female" class="scholarship-form-radio" /> <label for="female" class="scholarship-form-radio-label">Female</label>
-                    </div>
-                    <input type="text" placeholder="Mother's Maiden Name" class="scholarship-form-input" />
-                    <input type="text" placeholder="Occupation" class="scholarship-form-input" />
-                    <input type="text" placeholder="Father's Name" class="scholarship-form-input" />
-                    <input type="text" placeholder="Occupation" class="scholarship-form-input" />
-                    <input type="text" placeholder="Street Address" class="scholarship-form-input" />
-                    <input type="text" placeholder="House no./Bldg no." class="scholarship-form-input" />
-                    <input type="text" placeholder="Barangay" class="scholarship-form-input" />
-                    <input type="text" placeholder="Municipality" class="scholarship-form-input" />
-                    <input type="text" placeholder="City/Province" class="scholarship-form-input" />
-                    <input type="text" placeholder="Zip Code" class="scholarship-form-input" />
                 </div>
-                <div class="scholarship-form-requirements">
 
-                    <div class="scholarship-form-req-content">
-                        <label class="scholarship-form-req-label" style="display: block; margin-bottom: 16px; font-size: 14px; font-weight: 600;">Requirements:</label>
-                        <div class="scholarship-form-req-list">
-                            <div class="scholarship-form-req-item">
-                                <label class="scholarship-form-upload-box">
-                                    <div class="upload-preview">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span>Upload</span>
+                <!-- Page 2: Requirements -->
+                <div class="form-page" id="page2" style="display: none;">
+                    <h3 style="text-align: center; margin-bottom: 24px; color: #293D82; font-size: 1.3rem;">Requirements</h3>
+                    <div class="scholarship-form-requirements">
+                        <div class="scholarship-form-req-content">
+                            <div class="scholarship-form-req-list">
+                                <div class="scholarship-form-req-item">
+                                    <label class="scholarship-form-upload-box">
+                                        <div class="upload-preview">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Upload</span>
+                                        </div>
+                                        <input type="file" accept="image/*,.pdf">
+                                    </label>
+                                    <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                    <div class="scholarship-form-req-item-content">
+                                        <span>Certificate of Registration (COR) / Certificate of Enrollment (COE) / Assessment Form 1st Semester</span>
                                     </div>
-                                    <input type="file" accept="image/*,.pdf">
-                                </label>
-                                <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
-                                <div class="scholarship-form-req-item-content">
-                                    <span>Certificate of Registration (COR) / Certificate of Enrollment (COE) / Assessment Form 1st Semester</span>
                                 </div>
-                            </div>
-                            <div class="scholarship-form-req-item">
-                                <label class="scholarship-form-upload-box">
-                                    <div class="upload-preview">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span>Upload</span>
+                                <div class="scholarship-form-req-item">
+                                    <label class="scholarship-form-upload-box">
+                                        <div class="upload-preview">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Upload</span>
+                                        </div>
+                                        <input type="file" accept="image/*,.pdf">
+                                    </label>
+                                    <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                    <div class="scholarship-form-req-item-content">
+                                        <span>2nd Semester Certificate of Grades</span>
                                     </div>
-                                    <input type="file" accept="image/*,.pdf">
-                                </label>
-                                <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
-                                <div class="scholarship-form-req-item-content">
-                                    <span>2nd Semester Certificate of Grades</span>
                                 </div>
-                            </div>
-                            <div class="scholarship-form-req-item">
-                                <label class="scholarship-form-upload-box">
-                                    <div class="upload-preview">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span>Upload</span>
+                                <div class="scholarship-form-req-item">
+                                    <label class="scholarship-form-upload-box">
+                                        <div class="upload-preview">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Upload</span>
+                                        </div>
+                                        <input type="file" accept="image/*,.pdf">
+                                    </label>
+                                    <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                    <div class="scholarship-form-req-item-content">
+                                        <span>Original Barangay Indigency of Student</span>
                                     </div>
-                                    <input type="file" accept="image/*,.pdf">
-                                </label>
-                                <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
-                                <div class="scholarship-form-req-item-content">
-                                    <span>Original Barangay Indigency of Student</span>
                                 </div>
-                            </div>
-                            <div class="scholarship-form-req-item">
-                                <label class="scholarship-form-upload-box">
-                                    <div class="upload-preview">
-                                        <i class="fas fa-cloud-upload-alt"></i>
-                                        <span>Upload</span>
+                                <div class="scholarship-form-req-item">
+                                    <label class="scholarship-form-upload-box">
+                                        <div class="upload-preview">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <span>Upload</span>
+                                        </div>
+                                        <input type="file" accept="image/*,.pdf">
+                                    </label>
+                                    <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                    <div class="scholarship-form-req-item-content">
+                                        <span>Voters Certification</span>
                                     </div>
-                                    <input type="file" accept="image/*,.pdf">
-                                </label>
-                                <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
-                                <div class="scholarship-form-req-item-content">
-                                    <span>Voters Certification</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="scholarship-form-submit">
-                    <button type="submit" class="scholarship-form-btn" id="continueBtn">Continue</button>
+                    <div class="scholarship-form-submit" style="margin-top: 32px; display: flex; gap: 12px; justify-content: center;">
+                        <button type="button" class="scholarship-form-btn" id="prevBtn" style="background: #888;">Previous</button>
+                        <button type="button" class="scholarship-form-btn" id="continueBtn" style="background: #ff3fa4;">Continue</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -497,6 +596,62 @@ enforce_student_profile_completed($conn);
     <script>
         // Animation on scroll
         document.addEventListener('DOMContentLoaded', function() {
+
+            // Page navigation with criteria modal
+            const page1 = document.getElementById('page1');
+            const page2 = document.getElementById('page2');
+            const nextBtn = document.getElementById('nextBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const criteriaModal = document.getElementById('criteriaModal');
+            const criteriaOverlay = document.getElementById('criteriaOverlay');
+            const acknowledgeCriteria = document.getElementById('acknowledgeCriteria');
+
+            function openCriteriaModal(){
+                if(criteriaModal){
+                    criteriaModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            function closeCriteriaModal(){
+                if(criteriaModal){
+                    criteriaModal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+
+            function showPage2(){
+                page1.style.display = 'none';
+                page2.style.display = 'block';
+                window.scrollTo(0, 0);
+                openCriteriaModal();
+            }
+
+            if(nextBtn) {
+                nextBtn.addEventListener('click', function() {
+                    showPage2();
+                });
+            }
+
+            if(acknowledgeCriteria) {
+                acknowledgeCriteria.addEventListener('click', function() {
+                    closeCriteriaModal();
+                });
+            }
+
+            if(criteriaOverlay) {
+                criteriaOverlay.addEventListener('click', function() {
+                    closeCriteriaModal();
+                });
+            }
+
+            if(prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    page2.style.display = 'none';
+                    page1.style.display = 'block';
+                    window.scrollTo(0, 0);
+                });
+            }
 
             // File upload preview handlers
             const uploadInputs = document.querySelectorAll('.scholarship-form-upload-box input');
@@ -522,11 +677,52 @@ enforce_student_profile_completed($conn);
                     preview.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><span>Upload</span>';
                 });
             });
+
+            // Escape key handler for criteria modal
+            document.addEventListener('keydown', function(e){
+                if(e.key === 'Escape' && criteriaModal && criteriaModal.classList.contains('active')){
+                    closeCriteriaModal();
+                }
+            });
+
+            // Continue button confirmation
+            const continueBtn = document.getElementById('continueBtn');
+            if(continueBtn) {
+                continueBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const confirmModal = document.getElementById('confirmModal');
+                    if(confirmModal) {
+                        confirmModal.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }
+                });
+            }
         });
     </script>
 
     <?php include 'includes/footer.php'; ?>
     <script src="includes/script.js"></script>
+
+<!-- Document Criteria Modal -->
+<div id="criteriaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="criteriaTitle">
+    <div id="criteriaOverlay" class="modal-overlay"></div>
+    <div class="modal-content" style="max-width: 600px; font-size: 14px;">
+        <h2 id="criteriaTitle" style="margin: 0 0 16px; font-size: 22px; color: #293D82;">Criteria is for Document uploading</h2>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #ff3fa4;">
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                <li>Make sure the contents are visible</li>
+                <li>Make sure its authentic</li>
+                <li>Make sure it is original copy</li>
+                <li>Xerox copy is invalid</li>
+                <li>Make sure the official seals of school/barangay/institute are visible</li>
+                <li>Make sure the signature are visible</li>
+            </ul>
+        </div>
+        <div style="display:flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+            <button type="button" class="scholarship-form-btn" id="acknowledgeCriteria" style="background:#1e88e5; padding: 10px 30px;">I Understand</button>
+        </div>
+    </div>
+</div>
 
 <!-- Confirmation Modal -->
 <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
@@ -544,18 +740,11 @@ enforce_student_profile_completed($conn);
 <script>
 // Confirmation modal behavior for Continue button
 (function() {
-    const continueBtn = document.getElementById('continueBtn');
     const confirmModal = document.getElementById('confirmModal');
     const cancelConfirmBtn = document.getElementById('cancelConfirm');
     const proceedConfirmBtn = document.getElementById('proceedConfirm');
     const confirmOverlay = document.getElementById('confirmOverlay');
 
-    function openConfirmModal(){
-        if(confirmModal){
-            confirmModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    }
     function closeConfirmModal(){
         if(confirmModal){
             confirmModal.classList.remove('active');
@@ -563,12 +752,6 @@ enforce_student_profile_completed($conn);
         }
     }
 
-    if(continueBtn){
-        continueBtn.addEventListener('click', function(e){
-            e.preventDefault();
-            openConfirmModal();
-        });
-    }
     if(cancelConfirmBtn){
         cancelConfirmBtn.addEventListener('click', function(){
             closeConfirmModal();
