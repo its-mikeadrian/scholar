@@ -338,6 +338,28 @@ header {
     cursor: pointer;
 }
 
+/* History Modal Close Button */
+.close-btn {
+    background: transparent;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+}
+.close-btn:hover,
+.close-btn:focus {
+    color: #333;
+    background-color: rgba(0,0,0,0.06);
+    outline: none;
+}
+.close-btn:active {
+    transform: scale(0.95);
+}
+
 .modal .form-group {
     margin-bottom: 20px;
 }
@@ -401,9 +423,16 @@ header {
     backdrop-filter: blur(4px);
 }
 
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px; /* prevent edge collision on small screens */
+}
+
 .modal-content {
     background-color: #ffffff;
-    margin: 2% auto; 
+    margin: 0 auto; 
     padding: 30px;
     border: none;
     width: 90%; 
@@ -489,6 +518,7 @@ header {
     top: 20px;
     right: 20px;
     z-index: 9999;
+    pointer-events: none;
 }
 
 .toast {
@@ -650,6 +680,7 @@ header {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    pointer-events: none;
 }
 
 .toast {
@@ -724,82 +755,6 @@ header {
 }
 
 @keyframes toastFadeOut {
-    to {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-}
-
-
-/* Toast Notification Styles */
-.toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-}
-
-.toast {
-    background-color: #333;
-    color: #fff;
-    padding: 16px 24px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    opacity: 0;
-    transform: translateX(100%);
-    animation: toastSlideIn 0.3s forwards;
-    min-width: 300px;
-    max-width: 400px;
-}
-
-.toast.success {
-    background-color: #4caf50;
-    border-left: 6px solid #2e7d32;
-}
-
-.toast.error {
-    background-color: #f44336;
-    border-left: 6px solid #d32f2f;
-}
-
-.toast.warning {
-    background-color: #ff9800;
-    border-left: 6px solid #f57c00;
-}
-
-.toast-icon {
-    font-size: 20px;
-}
-
-.toast-message {
-    font-size: 14px;
-    font-weight: 500;
-    flex: 1;
-}
-
-.toast-close {
-    cursor: pointer;
-    opacity: 0.7;
-    font-size: 18px;
-    transition: opacity 0.2s;
-}
-
-.toast-close:hover {
-    opacity: 1;
-}
-
-@keyframes toastSlideIn {
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes toastSlideOut {
     to {
         opacity: 0;
         transform: translateX(100%);

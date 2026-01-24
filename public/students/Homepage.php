@@ -5,6 +5,17 @@ secure_session_start();
 require_once __DIR__ . '/../../src/db.php';
 
 enforce_student_profile_completed($conn);
+
+// Fetch announcements from database
+try {
+    $pdo = get_db_connection();
+    $stmt = $pdo->prepare('SELECT * FROM announcements ORDER BY created_at DESC');
+    $stmt->execute();
+    $announcements = $stmt->fetchAll();
+} catch (Exception $e) {
+    $announcements = [];
+    error_log('Error fetching announcements: ' . $e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,18 +70,15 @@ enforce_student_profile_completed($conn);
             box-sizing: border-box;
         }
 
-
-
-
         .hero {
-            background: linear-gradient(#1e88e59d, #293c82ce), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'), url('img/sanluis.jpg');
+            background: linear-gradient(#1e88e59d,rgba(25, 38, 85, 0.92)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'), url('img/sanluis.jpg');
             background-size: cover;
             background-position: center;
             color: white;
             text-align: center;
             padding: 100px 0;
             margin-bottom: 60px;
-
+            margin-top: 90px;
         }
 
         .hero h2 {
@@ -156,10 +164,7 @@ enforce_student_profile_completed($conn);
             border-left: 5px solid var(--primary);
         }
 
-        .announcement-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-        }
+
 
         .announcement-card h3 {
             color: var(--primary-dark);
@@ -294,19 +299,20 @@ enforce_student_profile_completed($conn);
             gap: 10px;
         }
 
-        /* CTA Section - Matching vaccination tagline style */
+        /* CTA Section - Hero-like background boxed */
         .cta-section {
-            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            background: linear-gradient(#1e88e59d,rgba(25, 38, 85, 0.92)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'), url('img/sanluis.jpg');
+            background-size: cover;
+            background-position: center;
             color: white;
             text-align: center;
-            padding: 80px 0;
+            padding: 100px 0;   
             margin: 0 auto;
             border-radius: 15px;
             margin-bottom: 60px;
             box-shadow: var(--shadow);
             width: 90%;
             max-width: 1200px;
-
         }
 
         .cta-section h2 {
@@ -393,6 +399,80 @@ enforce_student_profile_completed($conn);
                 text-align: left;
             }
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: var(--primary);
+        }
+
+        .modal-title {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--primary-dark);
+            font-size: 2rem;
+            margin-bottom: 20px;
+            margin-top: 20px;
+        }
+
+        .modal-announcements {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .see-more-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 20px;
+            display: inline-block;
+        }
+
+        .see-more-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(30, 136, 229, 0.3);
+        }
     </style>
 </head>
 
@@ -414,17 +494,58 @@ enforce_student_profile_completed($conn);
     <div class="announcement">
         <div class="section-title">ANNOUNCEMENT</div>
         <div class="announcement-content">
-            <div class="announcement-card fade-in">
-                <h3><i class="fas fa-bullhorn"></i> Program Now Open</h3>
-                <p>The <strong>Iskolar Nang Luis - Educational Assistance</strong> scholarship program is now accepting applications from deserving students who demonstrate academic excellence and commitment to community impact.</p>
-                <div class="highlight-box">
-                    <p>"We are now accepting applications from deserving students who strive for academic excellence and community impact."</p>
+            <?php if (empty($announcements)): ?>
+                <div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #999;">
+                    <p>No announcements yet</p>
                 </div>
-            </div>
-            <div class="announcement-card fade-in delay-1">
-                <h3><i class="fas fa-calendar-alt"></i> Important Updates</h3>
-                <p>New schedule changes have been implemented to better serve our scholars and ensure efficient distribution of educational assistance.</p>
-                <p>Please check the schedule section below for the latest updates on application deadlines and distribution timelines.</p>
+            <?php else: ?>
+                <!-- Show only the newest announcement -->
+                <?php $newest = $announcements[0]; ?>
+                <div class="announcement-card fade-in" style="grid-column: 1/-1;">
+                    <?php if (!empty($newest['image_path'])): ?>
+                        <img src="<?php echo htmlspecialchars('../' . $newest['image_path']); ?>" alt="<?php echo htmlspecialchars($newest['title']); ?>" style="width: 100%; border-radius: 10px; max-height: 300px; object-fit: cover; margin-bottom: 15px;">
+                        <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">
+                        <!-- <strong>Posted by User ID:</strong> <?php echo htmlspecialchars($newest['user_id']); ?> • -->
+                        <strong>Date:</strong> <?php echo date('M d, Y', strtotime($newest['created_at'])); ?>
+                    </p>
+                        <?php endif; ?>
+                    <h3><i class="fas fa-bullhorn"></i> <?php echo htmlspecialchars($newest['title']); ?></h3>
+                    
+                    <p style="margin-bottom: 15px;"><?php echo nl2br(htmlspecialchars($newest['content'])); ?></p>
+                    
+                    <?php if (count($announcements) > 1): ?>
+                        <button class="see-more-btn" id="seeMoreBtn">
+                            <i class="fas fa-eye"></i> See More Announcements (<?php echo count($announcements) - 1; ?>)
+                        </button>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Modal for other announcements -->
+    <div id="announcementModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title">More Announcements</h2>
+            <div class="modal-announcements">
+                <?php if (count($announcements) > 1): ?>
+                    <?php for ($i = 1; $i < count($announcements); $i++): ?>
+                        <?php $announcement = $announcements[$i]; ?>
+                        <div class="announcement-card fade-in">
+                            <?php if (!empty($announcement['image_path'])): ?>
+                                <img src="<?php echo htmlspecialchars('../' . $announcement['image_path']); ?>" alt="<?php echo htmlspecialchars($announcement['title']); ?>" style="width: 100%; border-radius: 10px; max-height: 250px; object-fit: cover; margin-bottom: 15px;">
+                                <p style="color: #999; font-size: 0.9rem; margin-bottom: 15px;">
+                               <!-- <strong>Posted by User ID:</strong> <?php echo htmlspecialchars($announcement['user_id']); ?> • --> 
+                                <strong>Date:</strong> <?php echo date('M d, Y', strtotime($announcement['created_at'])); ?>
+                            </p>
+                            <?php endif; ?>
+                            <h3><i class="fas fa-bullhorn"></i> <?php echo htmlspecialchars($announcement['title']); ?></h3>
+                            
+                            <p style="margin-bottom: 15px;"><?php echo nl2br(htmlspecialchars($announcement['content'])); ?></p>
+                        </div>
+                    <?php endfor; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -586,6 +707,29 @@ enforce_student_profile_completed($conn);
 
     <?php include 'includes/footer.php'; ?>
     <script src="includes/script.js"></script>
-</body>
 
-</html>
+    <script>
+        // Modal functionality
+        const modal = document.getElementById('announcementModal');
+        const seeMoreBtn = document.getElementById('seeMoreBtn');
+        const closeBtn = document.querySelector('.close');
+
+        if (seeMoreBtn) {
+            seeMoreBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+        }
+
+        // Close modal when clicking outside of it
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    </script>

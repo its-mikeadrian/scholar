@@ -10,36 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="includes/footer.css">
     <link rel="stylesheet" href="includes/header.css">
+
     <style>
-
-
-        /* History Button */
-        .history-btn-container { 
-            display: flex; 
-            justify-content: flex-end; 
-            margin-bottom: 20px; 
-        }
-        .history-btn { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            border: none;
-            padding: 10px 20px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); 
-            transition: all 0.3s ease; 
-        }
-        .history-btn:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5); 
-        }
-        .history-btn i { 
-            font-size: 16px; 
-        }
-
         .history-item { 
             background: #f9f9f9; 
             padding: 15px; 
@@ -84,7 +56,6 @@
         }
     </style>
 
-
     <!-- History Modal -->
     <div id="historyModal" class="modal">
         <div class="modal-content">
@@ -101,16 +72,8 @@
     <!-- Main content: Application Tracker + Submitted Form -->
     <main style="padding: 90px 0 40px;">
         <div class="container">
-            <!-- History Button -->
-            <div class="history-btn-container">
-                <button class="history-btn" onclick="openHistoryModal()">
-                    <i class="fas fa-history"></i>
-                    View History
-                </button>
-            </div>
 
     <script>
-
 
         // History Modal Functions
         function openHistoryModal() {

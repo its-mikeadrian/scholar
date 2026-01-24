@@ -286,4 +286,15 @@ $routes->add('totp_setup', new Route(
     ['GET', 'POST']
 ));
 
+// Announcements API
+$routes->add('announcement_api', new Route(
+    '/api/announcements',
+    ['_script' => __DIR__ . '/../public/announcement_actions.php'],
+    [],
+    [],
+    '',
+    [],
+    ['GET', 'POST']
+));
+
 return $routes;

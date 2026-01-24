@@ -379,12 +379,9 @@ enforce_student_profile_completed($conn);
         }
     </style>
 </head>
-
 <body>
 
-
-    <?php include 'includes/navbar.php'; ?>
-
+<?php include 'includes/navbar.php'; ?>
 
     <!-- Main content: Application Tracker + Submitted Form -->
     <main style="padding: 120px 0 40px;">

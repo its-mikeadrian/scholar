@@ -22,27 +22,38 @@ require_once __DIR__ . '/../../../src/db.php';
         </div>
         <nav class="nav-links" id="mainNav" aria-label="Main Navigation">
             <?php
-                $home_href = '#';
-                // Detect if current request is the application page. Previous check used SCRIPT_NAME basename,
-                // which can fail when routing is handled by a front controller. Check REQUEST_URI path too.
+                // Determine current path and script
                 $request_path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
                 $script_base = basename($_SERVER['SCRIPT_NAME'] ?? '');
-                if ($script_base === 'application_form.php' || preg_match('#/students/application(?:$|/)#', $request_path)) {
-                    $home_href = htmlspecialchars(route_url('students/home'), ENT_QUOTES);
-                }
-            ?>
-            <a href="<?php echo $home_href; ?>" id="homeBtn">Home</a>
-            <?php
-                if ($script_base === 'application_form.php' || preg_match('#/students/application(?:$|/)#', $request_path)) {
-                    $about_href = htmlspecialchars(route_url('students/home') . '#mission-vision', ENT_QUOTES);
-                    $req_href = htmlspecialchars(route_url('students/home') . '#requirements', ENT_QUOTES);
+
+                // Detect if we are currently on the Home page (file or routed path)
+                $on_home = ($script_base === 'Homepage.php' || preg_match('#/students/home(?:$|/)#', $request_path));
+
+                // Home: on Home page, scroll to top without reload; otherwise navigate to Home route
+                if ($on_home) {
+                    $home_href = '#';
+                    $home_class = '';
                 } else {
+                    $home_href = htmlspecialchars(route_url('students/home'), ENT_QUOTES);
+                    $home_class = '';
+                }
+
+                // About/Requirements should be in-page anchors when on Home, otherwise link to Home with fragments
+                if ($on_home) {
                     $about_href = '#mission-vision';
                     $req_href = '#requirements';
+                    $about_class = 'scroll-link';
+                    $req_class = 'scroll-link';
+                } else {
+                    $about_href = htmlspecialchars(route_url('students/home') . '#mission-vision', ENT_QUOTES);
+                    $req_href = htmlspecialchars(route_url('students/home') . '#requirements', ENT_QUOTES);
+                    $about_class = '';
+                    $req_class = '';
                 }
             ?>
-            <a href="<?php echo $about_href; ?>" class="scroll-link">About Us</a>
-            <a href="<?php echo $req_href; ?>" class="scroll-link">Requirements</a>
+            <a href="<?php echo $home_href; ?>" id="homeBtn" class="<?php echo $home_class; ?>">Home</a>
+            <a href="<?php echo $about_href; ?>" class="<?php echo $about_class; ?>">About Us</a>
+            <a href="<?php echo $req_href; ?>" class="<?php echo $req_class; ?>">Requirements</a>
             <?php if ($__auth_id): ?>
                 <a href="<?php echo htmlspecialchars(route_url('students/application'), ENT_QUOTES); ?>">My Application</a>
             <?php endif; ?>

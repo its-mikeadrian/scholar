@@ -70,8 +70,6 @@ enforce_student_profile_completed($conn);
             font-size: 16px;
             cursor: pointer;
             transition: var(--transition);
-
-
             display: flex;
             align-items: center;
             gap: 10px;
@@ -188,7 +186,6 @@ enforce_student_profile_completed($conn);
                 font-size: 1.8rem;
             }
         }
-
 
         /* Scholarship Application Form Section Styles */
         .scholarship-form-section {
@@ -490,7 +487,7 @@ enforce_student_profile_completed($conn);
                     </div>
                 </div>
                 <div class="scholarship-form-submit">
-                    <button type="submit" class="scholarship-form-btn">Continue</button>
+                    <button type="submit" class="scholarship-form-btn" id="continueBtn">Continue</button>
                 </div>
             </form>
         </div>
@@ -530,6 +527,70 @@ enforce_student_profile_completed($conn);
 
     <?php include 'includes/footer.php'; ?>
     <script src="includes/script.js"></script>
-</body>
 
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div id="confirmOverlay" class="modal-overlay"></div>
+    <div class="modal-content" style="max-width: 520px; font-size: 14px;">
+        <h2 id="confirmTitle" style="margin: 0 0 12px; font-size: 24px;">Proceed to My Application?</h2>
+        <p style="color:#555; margin-bottom: 18px;">Are you sure you want to continue to your application overview page?</p>
+        <div style="display:flex; gap: 12px; justify-content: flex-end;">
+            <button type="button" class="close-btn" id="cancelConfirm">Cancel</button>
+            <button type="button" class="apply-btn" id="proceedConfirm" style="background:#293D82; color:#fff;">Proceed</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirmation modal behavior for Continue button
+(function() {
+    const continueBtn = document.getElementById('continueBtn');
+    const confirmModal = document.getElementById('confirmModal');
+    const cancelConfirmBtn = document.getElementById('cancelConfirm');
+    const proceedConfirmBtn = document.getElementById('proceedConfirm');
+    const confirmOverlay = document.getElementById('confirmOverlay');
+
+    function openConfirmModal(){
+        if(confirmModal){
+            confirmModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    function closeConfirmModal(){
+        if(confirmModal){
+            confirmModal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    if(continueBtn){
+        continueBtn.addEventListener('click', function(e){
+            e.preventDefault();
+            openConfirmModal();
+        });
+    }
+    if(cancelConfirmBtn){
+        cancelConfirmBtn.addEventListener('click', function(){
+            closeConfirmModal();
+        });
+    }
+    if(confirmOverlay){
+        confirmOverlay.addEventListener('click', function(){
+            closeConfirmModal();
+        });
+    }
+    if(proceedConfirmBtn){
+        proceedConfirmBtn.addEventListener('click', function(){
+            closeConfirmModal();
+            window.location.href = 'my_application.php';
+        });
+    }
+    document.addEventListener('keydown', function(e){
+        if(e.key === 'Escape' && confirmModal && confirmModal.classList.contains('active')){
+            closeConfirmModal();
+        }
+    });
+})();
+</script>
+</body>
 </html>
