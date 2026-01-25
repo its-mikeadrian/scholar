@@ -348,18 +348,52 @@ try {
         // Store all announcements data
         const allAnnouncements = <?php echo json_encode($announcements); ?>;
 
-        // Initialize Flatpickr calendar
-        flatpickr('#dateFilter', {
-            mode: 'single',
-            dateFormat: 'Y-m-d',
-            inline: true,
-            appendTo: document.getElementById('calendarContainer'),
-            onChange: function(selectedDates) {
-                if (selectedDates.length > 0) {
-                    const selectedDate = selectedDates[0];
-                    const dateStr = selectedDate.toISOString().split('T')[0];
-                    filterAnnouncementsByDate(dateStr);
+        // Per-page appOnReady (moved from header) so SPA-injected pages can initialize page-specific code
+        window.appOnReady = function(fn) {
+            if (typeof fn !== 'function') return;
+            document.addEventListener('app:content:ready', function() {
+                try {
+                    fn();
+                } catch (e) {}
+            });
+            var c = document.getElementById('app-content');
+            if (c) {
+                try {
+                    fn();
+                } catch (e) {}
+            }
+        };
+
+        // Initialize Flatpickr calendar (use appOnReady so SPA-injected pages initialize)
+        window.appOnReady(function() {
+            var initFlatpickr = function() {
+                try {
+                    if (typeof flatpickr !== 'function') return false;
+                    flatpickr('#dateFilter', {
+                        mode: 'single',
+                        dateFormat: 'Y-m-d',
+                        inline: true,
+                        appendTo: document.getElementById('calendarContainer'),
+                        onChange: function(selectedDates) {
+                            if (selectedDates.length > 0) {
+                                const selectedDate = selectedDates[0];
+                                const dateStr = selectedDate.toISOString().split('T')[0];
+                                filterAnnouncementsByDate(dateStr);
+                            }
+                        }
+                    });
+                    return true;
+                } catch (e) {
+                    return false;
                 }
+            };
+
+            if (!initFlatpickr()) {
+                var attempts = 0;
+                var t = setInterval(function() {
+                    attempts++;
+                    if (initFlatpickr() || attempts > 20) clearInterval(t);
+                }, 150);
             }
         });
 
