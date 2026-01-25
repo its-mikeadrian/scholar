@@ -180,6 +180,45 @@ try {
 
         echo json_encode(['success' => true, 'message' => 'Announcement deleted successfully']);
 
+    } elseif ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        $announcement_id = (int)($_POST['id'] ?? 0);
+        $title = $_POST['title'] ?? '';
+        $content = $_POST['content'] ?? '';
+
+        // Validate inputs
+        if (empty($title) || empty($content)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Title and content are required']);
+            exit;
+        }
+
+        // Check ownership
+        $stmt = $pdo->prepare("SELECT user_id FROM announcements WHERE id = ?");
+        $stmt->execute([$announcement_id]);
+        $announcement = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$announcement) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Announcement not found']);
+            exit;
+        }
+
+        if ($announcement['user_id'] !== $user_id && auth_role() !== 'superadmin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'You cannot edit this announcement']);
+            exit;
+        }
+
+        // Update announcement
+        $stmt = $pdo->prepare("
+            UPDATE announcements 
+            SET title = ?, content = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$title, $content, $announcement_id]);
+
+        echo json_encode(['success' => true, 'message' => 'Announcement updated successfully']);
+
     } else {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Invalid request']);

@@ -77,7 +77,7 @@ try {
 </head>
 <body>
     <div class="container">
-        <h1>📢 Announcements</h1>
+        <h1>Announcements</h1>
         
         <?php if (empty($announcements)): ?>
             <div class="no-announcements">
