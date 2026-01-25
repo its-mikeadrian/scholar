@@ -69,32 +69,108 @@ try {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        /* Custom styles for calendar */
+        .flatpickr-calendar {
+            width: 100% !important;
+            max-width: 100% !important;
+            transform: scale(1) !important;
+            padding: 8px !important;
+        }
+        .flatpickr-innerContainer {
+            width: 100% !important;
+        }
+        .flatpickr-days {
+            width: 100% !important;
+        }
+        .dayContainer {
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        .flatpickr-day {
+            height: 38px !important;
+            line-height: 38px !important;
+            font-size: 14px !important;
+            width: calc(100% / 7) !important;
+            max-width: calc(100% / 7) !important;
+            flex: 0 0 calc(100% / 7) !important;
+        }
+        .flatpickr-weekday {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            width: calc(100% / 7) !important;
+            flex: 0 0 calc(100% / 7) !important;
+        }
+        .flatpickr-current-month {
+            font-size: 16px !important;
+            padding-bottom: 6px !important;
+        }
+        .flatpickr-month {
+            height: 45px !important;
+        }
+        .flatpickr-weekdays {
+            width: 100% !important;
+        }
+        .flatpickr-weekdaycontainer {
+            display: flex !important;
+            width: 100% !important;
+        }
+        .flatpickr-rContainer {
+            width: 100% !important;
+        }
+        .flatpickr-weekwrapper {
+            display: none !important;
+        }
+    </style>
 </head>
 
 <body class="min-h-screen bg-[#f0f7ff]">
     <?php require __DIR__ . '/header.php'; ?>
     <?php require __DIR__ . '/sidebar.php'; ?>
     <div class="pt-14 lg:pl-16" id="appMain">
-        <main id="app-content" class="max-w-4xl mx-auto px-4 py-6">
+        <main id="app-content" class="max-w-6xl mx-auto px-4 py-6">
             <!-- Date Filter Calendar & Statistics -->
             <div class="mb-8 bg-white rounded-2xl p-6 shadow-sm">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Filter by Date</h3>
                 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Calendar -->
-                    <div class="lg:col-span-1">
-                        <div id="calendarContainer" class="mb-4"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> <!-- Changed back to lg:grid-cols-2 for equal halves -->
+                    <!-- Calendar - Now takes 1/2 of the width -->
+                    <div class="lg:col-span-1"> <!-- Changed from lg:col-span-2 to lg:col-span-1 -->
+                        <div id="calendarContainer" class="mb-4 w-full">
+                            <div class="w-full">
+                                <input 
+                                    type="text" 
+                                    id="dateFilter" 
+                                    placeholder="Select a date..." 
+                                    class="hidden"
+                                >
+                                <div class="text-center text-sm text-gray-500 mb-2">
+                                    Click on any date to filter announcements
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Reset Filter Button -->
+                        <div class="mt-4 text-left">
+                            <button 
+                                onclick="resetDateFilter()"
+                                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm font-medium"
+                            >
+                                Reset Date Filter
+                            </button>
+                        </div>
                     </div>
                     
-                    <!-- Statistics -->
-                    <div class="lg:col-span-1">
+                    <!-- Statistics - Now takes 1/2 of the width -->
+                    <div class="lg:col-span-1"> <!-- Changed from lg:col-span-1 to lg:col-span-1 (still 1/2) -->
                         <h4 class="text-sm font-semibold text-gray-700 mb-3">Announcement Statistics</h4>
                         <div class="grid grid-cols-2 gap-3 mb-4">
                             <!-- Total Announcements -->
                             <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <p class="text-xs text-gray-600 font-medium">Total Announcements</p>
+                                        <p class="text-xs text-gray-600 font-medium">Total</p>
                                         <p class="text-2xl font-bold text-blue-600 mt-0"><?php echo $stats['total']; ?></p>
                                     </div>
                                     <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,13 +223,6 @@ try {
                         </button>
                     </div>
                 </div>
-                
-                <input 
-                    type="text" 
-                    id="dateFilter" 
-                    placeholder="Select a date..." 
-                    class="hidden"
-                >
             </div>
 
             <!-- Announcements Feed -->
@@ -276,6 +345,30 @@ try {
         </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Delete Announcement?</h3>
+            <p class="text-gray-600 mb-6">Are you sure you want to delete this announcement? This action cannot be undone.</p>
+            <div class="flex gap-3">
+                <button 
+                    type="button"
+                    id="confirmDeleteBtn"
+                    class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex-1"
+                >
+                    Delete
+                </button>
+                <button 
+                    type="button"
+                    onclick="closeDeleteModal()"
+                    class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Edit Announcement Modal -->
     <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
         <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -344,6 +437,7 @@ try {
 
         let selectedImage = null;
         let currentPage = 1;
+        let pendingDeleteId = null;
 
         // Store all announcements data
         const allAnnouncements = <?php echo json_encode($announcements); ?>;
@@ -369,11 +463,12 @@ try {
             var initFlatpickr = function() {
                 try {
                     if (typeof flatpickr !== 'function') return false;
-                    flatpickr('#dateFilter', {
+                    var calendar = flatpickr('#dateFilter', {
                         mode: 'single',
                         dateFormat: 'Y-m-d',
                         inline: true,
                         appendTo: document.getElementById('calendarContainer'),
+                        showWeekNumbers: false, // Disable week numbers to ensure 7-day layout
                         onChange: function(selectedDates) {
                             if (selectedDates.length > 0) {
                                 const selectedDate = selectedDates[0];
@@ -382,6 +477,30 @@ try {
                             }
                         }
                     });
+                    
+                    // Ensure calendar takes full width but fits in half the container
+                    setTimeout(() => {
+                        const calendarElement = document.querySelector('.flatpickr-calendar');
+                        if (calendarElement) {
+                            calendarElement.style.width = '100%';
+                            calendarElement.style.maxWidth = '100%';
+                            
+                            // Force 7-day layout
+                            const dayElements = calendarElement.querySelectorAll('.flatpickr-day');
+                            dayElements.forEach(day => {
+                                day.style.width = 'calc(100% / 7)';
+                                day.style.maxWidth = 'calc(100% / 7)';
+                                day.style.flex = '0 0 calc(100% / 7)';
+                            });
+                            
+                            // Hide week numbers column
+                            const weekWrapper = calendarElement.querySelector('.flatpickr-weekwrapper');
+                            if (weekWrapper) {
+                                weekWrapper.style.display = 'none';
+                            }
+                        }
+                    }, 100);
+                    
                     return true;
                 } catch (e) {
                     return false;
@@ -515,8 +634,22 @@ try {
         });
 
         // Delete announcement
-        async function deleteAnnouncement(id) {
-            if (!confirm('Are you sure you want to delete this announcement?')) return;
+        function deleteAnnouncement(id) {
+            pendingDeleteId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            pendingDeleteId = null;
+        }
+
+        // Confirm delete
+        async function confirmDelete() {
+            if (!pendingDeleteId) return;
+
+            const id = pendingDeleteId;
+            closeDeleteModal();
 
             try {
                 const response = await fetch('announcement_actions.php?action=delete', {
@@ -615,11 +748,20 @@ try {
             }
         });
 
+        document.getElementById('deleteModal').addEventListener('click', (e) => {
+            if (e.target.id === 'deleteModal') {
+                closeDeleteModal();
+            }
+        });
+
         document.getElementById('createModal').addEventListener('click', (e) => {
             if (e.target.id === 'createModal') {
                 closeCreateModal();
             }
         });
+
+        // Confirm delete button click handler
+        document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
 
         // Date filter functionality
         function filterAnnouncementsByDate(dateString) {
