@@ -72,7 +72,7 @@ function is_active_link(string $pattern, string $uri): bool
                     </a>
                 </li>
                 <li>
-                    <a href="<?= route_url('menu-5') ?>" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-5', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>" onclick="window.location.href = this.href">
+                    <a href="<?= route_url('menu-5') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-5', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>" onclick="window.location.href = this.href">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="7" cy="17" r="2" />
                             <circle cx="17" cy="7" r="2" />
