@@ -6,7 +6,7 @@ require_once __DIR__ . '/../src/db.php';
 require_once __DIR__ . '/../config/env.php';
 
 if (!isset($_SESSION['pending_user_id'])) {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if (!empty($_SESSION['pending_remember_me'])) {
                                 unset($_SESSION['pending_remember_me']);
                             }
-                            header('Location: ' . route_url(''));
+                            header('Location: ' . route_url('admin'));
                             exit;
                         }
                         $_SESSION['auth_user_id'] = $userId;
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     audit_login_event($conn, $userId, $username, 'otp_verified', $_SESSION['auth_role'] ?? null, $ipAddr, $ua);
                     $_SESSION['success'] = 'Login successful!';
                     session_write_close();
-                    header('Location: ' . route_url('menu-1'));
+                    header('Location: ' . route_url('admin/menu-1'));
                     exit;
                 }
             }
@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin/style.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(asset_url('admin/style.css'), ENT_QUOTES, 'UTF-8'); ?>">
     <title>Verify OTP</title>
 
 </head>
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <main class="page" id="page">
         <section class="card" role="region" aria-labelledby="otp-title">
-            <img src="images/logo.png" alt="Institution logo" class="brand-logo">
+            <img src="<?= htmlspecialchars(asset_url('images/logo.png'), ENT_QUOTES, 'UTF-8'); ?>" alt="Institution logo" class="brand-logo">
             <div class="brand-block">
                 <div class="game-title" aria-hidden="false">
                     <span class="rp">Republic of the Philippines</span>
@@ -184,13 +184,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="field otp-field" id="admin-otp-field">
                 <label for="admin-otp">One-Time Password</label>
                 <div class="row" style="align-items:center; gap:10px;">
-                    <form method="POST" id="otpForm" action="<?= route_url('verify-otp') ?>" class="otp-inline" style="flex:1;">
+                    <form method="POST" id="otpForm" action="<?= route_url('admin/verify-otp') ?>" class="otp-inline" style="flex:1;">
                         <?php echo csrf_input(); ?>
                         <div class="input-wrap" style="display:flex;">
                             <input type="text" name="otp" id="admin-otp" inputmode="numeric" maxlength="6" pattern="\d{6}" required placeholder="Enter 6-digit code" aria-label="One-time password" style="width:100%;" />
                         </div>
                     </form>
-                    <form method="POST" action="<?= route_url('resend-otp') ?>" id="resendForm">
+                    <form method="POST" action="<?= route_url('admin/resend-otp') ?>" id="resendForm">
                         <?php echo csrf_input(); ?>
                         <button type="submit" id="admin-resend-otp" class="btn secondary" data-remaining="<?php echo (int)$cooldownRemaining; ?>" <?php echo ($cooldownRemaining > 0) ? 'disabled' : ''; ?>>Resend<?php echo ($cooldownRemaining > 0) ? ' (' . (int)$cooldownRemaining . 's)' : ''; ?></button>
                     </form>
@@ -200,12 +200,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn" aria-busy="false" form="otpForm" style="display:block; margin:20px auto 0;">Verify</button>
 
             <div class="mt-3" style="text-align:center; margin-top:20px;">
-                <a href="<?= route_url('') ?>" class="forgot">Back to Login</a>
+                <a href="<?= route_url('admin') ?>" class="forgot">Back to Login</a>
             </div>
         </section>
     </main>
 
-    <script src="admin/script.js"></script>
+    <script src="<?= htmlspecialchars(asset_url('admin/script.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var btn = document.getElementById('admin-resend-otp');

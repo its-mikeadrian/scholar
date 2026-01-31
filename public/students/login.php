@@ -13,7 +13,9 @@ if (file_exists($autoload)) {
     require_once $autoload;
 }
 if (!empty($_SESSION['auth_user_id']) && auth_role() === 'student') {
-    header('Location: ' . route_url('students/home'));
+    $userId = (int) $_SESSION['auth_user_id'];
+    $target = student_profile_completed($conn, $userId) ? route_url('students/home') : route_url('students/profile-setup');
+    header('Location: ' . $target);
     exit;
 }
 // Allow exiting OTP mode when user clicks Back
@@ -249,18 +251,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <div class="modal-overlay" id="forgot-overlay" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
+    <div class="student-modal-overlay" id="forgot-overlay" aria-hidden="true">
+        <div class="student-modal" role="dialog" aria-modal="true" aria-labelledby="forgot-title">
             <button type="button" class="close-btn" id="close-reset" aria-label="Close">&times;</button>
-
-
+            <img src="../images/logo.png" alt="Institution logo" class="brand-logo">
+            <div class="game-title" aria-hidden="false">
+                <span class="rp">Republic of the Philippines</span>
+                <span class="main">ISKOLAR NANG LUIS</span>
+                <span class="sub">MUNICIPALITY OF SAN LUIS, PAMPANGA</span>
+            </div>
             <h2 id="forgot-title">Reset Password</h2>
             <p>Enter your email address to receive a reset link.</p>
-            <input type="email" id="forgot-email" placeholder="Email Address" inputmode="email">
-            <div class="modal-actions">
-                <button type="button" id="send-reset">Send Reset Link</button>
-                <button type="button" class="secondary" id="cancel-reset">Cancel</button>
-            </div>
+            <form id="student-forgot-form" method="POST" action="<?= route_url('students/forgot-password') ?>" novalidate autocomplete="off">
+                <?= csrf_input(); ?>
+                <input type="email" id="forgot-email" name="email" placeholder="Email Address" inputmode="email" autocomplete="email" aria-label="Email address for password reset" required>
+                <div class="modal-actions">
+                    <button type="submit" id="send-reset">Send Reset Link</button>
+                    <button type="button" class="secondary" id="cancel-reset">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -290,6 +299,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const signUpBackBtn = document.querySelector('#signup-otp-back');
             let otpMode = <?php echo $otpMode ? 'true' : 'false'; ?>;
             let signupOtpMode = <?php echo $regOtpMode ? 'true' : 'false'; ?>;
+            const containerEl = document.getElementById('container');
+            if (containerEl) {
+                if (signupOtpMode) {
+                    containerEl.classList.add('active');
+                } else if (otpMode) {
+                    containerEl.classList.remove('active');
+                } else if (window.__messages && window.__messages.errors && typeof window.__messages.errors === 'object') {
+                    const keys = Object.keys(window.__messages.errors);
+                    const hasSignupError = keys.some(k => typeof k === 'string' && k.indexOf('signup-') === 0);
+                    if (hasSignupError) {
+                        containerEl.classList.add('active');
+                    }
+                }
+            }
 
             function enterOtpMode() {
                 otpMode = true;

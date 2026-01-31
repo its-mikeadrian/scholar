@@ -5,19 +5,19 @@ require_once __DIR__ . '/../src/db.php';
 require_once __DIR__ . '/../config/env.php';
 
 if (!isset($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . route_url('menu-1'));
+    header('Location: ' . route_url('admin/menu-1'));
     exit;
 }
 
 // CSRF protection
 if (!csrf_validate()) {
     $_SESSION['error'] = 'Invalid request. Please refresh and try again.';
-    $ret = isset($_POST['return_to']) ? (string)$_POST['return_to'] : route_url('menu-1');
+    $ret = isset($_POST['return_to']) ? (string)$_POST['return_to'] : route_url('admin/menu-1');
     header('Location: ' . $ret);
     exit;
 }
@@ -33,8 +33,8 @@ $old = [
     'email' => $email,
 ];
 // Preserve return target
-$returnTo = isset($_POST['return_to']) ? (string)$_POST['return_to'] : route_url('menu-1');
-if (!is_string($returnTo) || $returnTo === '') { $returnTo = route_url('menu-1'); }
+$returnTo = isset($_POST['return_to']) ? (string)$_POST['return_to'] : route_url('admin/menu-1');
+if (!is_string($returnTo) || $returnTo === '') { $returnTo = route_url('admin/menu-1'); }
 
 // Validation
 if ($username === '' || strlen($username) < 3) {

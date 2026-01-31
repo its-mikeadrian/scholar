@@ -33,9 +33,9 @@ if (!function_exists('configureMailer')) {
         }
         $mail->Port = (int) env_get('SMTP_PORT', (string) $defaultPort);
 
-        $verifyPeer = filter_var(env_get('SMTP_VERIFY_PEER', 'false'), FILTER_VALIDATE_BOOLEAN);
-        $verifyPeerName = filter_var(env_get('SMTP_VERIFY_PEER_NAME', 'false'), FILTER_VALIDATE_BOOLEAN);
-        $allowSelfSigned = filter_var(env_get('SMTP_ALLOW_SELF_SIGNED', 'true'), FILTER_VALIDATE_BOOLEAN);
+        $verifyPeer = filter_var(env_get('SMTP_VERIFY_PEER', 'true'), FILTER_VALIDATE_BOOLEAN);
+        $verifyPeerName = filter_var(env_get('SMTP_VERIFY_PEER_NAME', 'true'), FILTER_VALIDATE_BOOLEAN);
+        $allowSelfSigned = filter_var(env_get('SMTP_ALLOW_SELF_SIGNED', 'false'), FILTER_VALIDATE_BOOLEAN);
         $mail->SMTPOptions = [
             'ssl' => [
                 'verify_peer' => $verifyPeer,

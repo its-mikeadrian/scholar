@@ -38,9 +38,9 @@ if ($uid > 0) {
                 unset($_SESSION['old_account'], $_SESSION['errors_account'], $_SESSION['account_settings_success']); ?>
                 <?php $page_success = $_SESSION['success'] ?? null;
                 unset($_SESSION['success']); ?>
-                <form id="accountForm" method="POST" action="<?= route_url('account/settings') ?>">
+                <form id="accountForm" method="POST" action="<?= route_url('admin/account/settings') ?>">
                     <?= csrf_input(); ?>
-                    <input type="hidden" name="return_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? route_url('menu-1'), ENT_QUOTES, 'UTF-8'); ?>">
+                    <input type="hidden" name="return_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? route_url('admin/menu-1'), ENT_QUOTES, 'UTF-8'); ?>">
                     <label class="block text-sm font-medium text-gray-700">Username</label>
                     <input type="text" id="username" name="username" required minlength="3" value="<?php echo htmlspecialchars($oldAcc['username'] ?? $username, ENT_QUOTES, 'UTF-8'); ?>" autocomplete="username" class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 <?php echo isset($errorsAcc['username']) ? 'ring-2 ring-red-500' : ''; ?>">
 

@@ -13,6 +13,43 @@ function request_portal(): string
     return (strpos($p, '/students/') !== false) ? 'student' : 'admin';
 }
 
+function session_cookie_path_for_portal(string $portal): string
+{
+    if (PHP_SAPI === 'cli-server') {
+        return '/';
+    }
+
+    $defaultStudent = env_get('STUDENT_SESSION_COOKIE_PATH', '/students');
+    $defaultAdmin = env_get('ADMIN_SESSION_COOKIE_PATH', '/');
+    $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    $uriPath = is_string($uriPath) ? $uriPath : '';
+
+    if ($portal === 'student') {
+        if (function_exists('app_base_path')) {
+            $base = (string) app_base_path();
+            if ($base === '/index.php') {
+                return '/';
+            }
+            return rtrim($base, '/') . '/students';
+        }
+        $pos = strpos($uriPath, '/students');
+        if ($pos !== false) {
+            return substr($uriPath, 0, $pos + strlen('/students'));
+        }
+        return $defaultStudent;
+    }
+
+    if (function_exists('app_base_path')) {
+        $base = (string) app_base_path();
+        if ($base === '/index.php') {
+            return '/';
+        }
+        return $base !== '' ? $base : $defaultAdmin;
+    }
+
+    return $defaultAdmin;
+}
+
 function secure_session_start(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -28,7 +65,7 @@ function secure_session_start(): void
     // Configure cookie params from environment
     $domain = env_get('SESSION_COOKIE_DOMAIN', '');
     $portal = request_portal();
-    $path = $portal === 'student' ? env_get('STUDENT_SESSION_COOKIE_PATH', '/students') : env_get('ADMIN_SESSION_COOKIE_PATH', '/');
+    $path = session_cookie_path_for_portal($portal);
     $secure = $isHttps || filter_var(env_get('SESSION_COOKIE_SECURE', ''), FILTER_VALIDATE_BOOLEAN);
     $samesite = env_get('SESSION_COOKIE_SAMESITE', 'Strict');
     $name = $portal === 'student'
@@ -166,6 +203,109 @@ function auth_role(): string
     return 'student';
 }
 
+function ensure_student_profiles_table(mysqli $conn): void
+{
+    $hasStudent = false;
+    $res = $conn->query("SHOW TABLES LIKE 'student_profiles'");
+    if ($res instanceof mysqli_result) {
+        $hasStudent = $res->num_rows > 0;
+        $res->free();
+    }
+
+    $hasUser = false;
+    $res2 = $conn->query("SHOW TABLES LIKE 'user_profiles'");
+    if ($res2 instanceof mysqli_result) {
+        $hasUser = $res2->num_rows > 0;
+        $res2->free();
+    }
+
+    if (!$hasStudent && $hasUser) {
+        $conn->query("RENAME TABLE user_profiles TO student_profiles");
+    }
+
+    $conn->query("CREATE TABLE IF NOT EXISTS student_profiles (
+  user_id INT UNSIGNED NOT NULL PRIMARY KEY,
+  first_name VARCHAR(100) NULL,
+  last_name VARCHAR(100) NULL,
+  address VARCHAR(255) NULL,
+  photo_path VARCHAR(255) NULL,
+  is_completed TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_profile_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $hasCompletedCol = false;
+    $col = $conn->query("SHOW COLUMNS FROM student_profiles LIKE 'is_completed'");
+    if ($col instanceof mysqli_result) {
+        $hasCompletedCol = $col->num_rows > 0;
+        $col->free();
+    }
+    if (!$hasCompletedCol) {
+        $conn->query("ALTER TABLE student_profiles ADD COLUMN is_completed TINYINT(1) NOT NULL DEFAULT 0");
+    }
+}
+
+function student_profile_completed(mysqli $conn, int $userId): bool
+{
+    if ($userId <= 0) {
+        return false;
+    }
+
+    ensure_student_profiles_table($conn);
+
+    $stmt = $conn->prepare('SELECT first_name, last_name, photo_path, is_completed FROM student_profiles WHERE user_id = ? LIMIT 1');
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param('i', $userId);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$row) {
+        return false;
+    }
+
+    $explicit = isset($row['is_completed']) ? (int) $row['is_completed'] : 0;
+    if ($explicit === 1) {
+        return true;
+    }
+
+    $first = trim((string)($row['first_name'] ?? ''));
+    $last = trim((string)($row['last_name'] ?? ''));
+    $photo = trim((string)($row['photo_path'] ?? ''));
+    $complete = ($first !== '' && $last !== '' && $photo !== '');
+
+    if ($complete) {
+        $upd = $conn->prepare('UPDATE student_profiles SET is_completed = 1 WHERE user_id = ?');
+        if ($upd) {
+            $upd->bind_param('i', $userId);
+            $upd->execute();
+            $upd->close();
+        }
+    }
+
+    return $complete;
+}
+
+function enforce_student_profile_completed(mysqli $conn): void
+{
+    $uid = auth_user_id();
+    if (!$uid || auth_role() !== 'student') {
+        $loginUrl = function_exists('route_url') ? route_url('students/login') : '/students/login';
+        header('Location: ' . $loginUrl);
+        exit;
+    }
+
+    if (!student_profile_completed($conn, (int)$uid)) {
+        $setupUrl = function_exists('route_url') ? route_url('students/profile-setup') : '/students/profile-setup';
+        header('Location: ' . $setupUrl);
+        exit;
+    }
+}
+
 function require_role(array $allowed): void
 {
     $role = auth_role();
@@ -175,7 +315,11 @@ function require_role(array $allowed): void
         }
     }
     $_SESSION['error'] = 'Insufficient permissions to access this page.';
-    header('Location: ' . route_url('menu-1'));
+    if ($role === 'student') {
+        header('Location: ' . route_url('students/home'));
+    } else {
+        header('Location: ' . route_url('admin/menu-1'));
+    }
     exit;
 }
 

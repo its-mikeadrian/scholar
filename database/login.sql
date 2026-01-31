@@ -180,25 +180,26 @@ INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `is_active`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `user_profiles`
+-- Table structure for table `student_profiles`
 --
 
-CREATE TABLE `user_profiles` (
+CREATE TABLE `student_profiles` (
   `user_id` int(10) UNSIGNED NOT NULL,
   `first_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) DEFAULT NULL,
   `address` varchar(255) DEFAULT NULL,
   `photo_path` varchar(255) DEFAULT NULL,
+  `is_completed` tinyint(1) NOT NULL DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `user_profiles`
+-- Dumping data for table `student_profiles`
 --
 
-INSERT INTO `user_profiles` (`user_id`, `first_name`, `last_name`, `address`, `photo_path`, `created_at`, `updated_at`) VALUES
-(2, 'MIKE', 'CRUZ', '1982', 'storage/uploads/students/2/profile.png', '2025-12-04 05:44:36', NULL);
+INSERT INTO `student_profiles` (`user_id`, `first_name`, `last_name`, `address`, `photo_path`, `is_completed`, `created_at`, `updated_at`) VALUES
+(2, 'MIKE', 'CRUZ', '1982', 'storage/uploads/students/2/profile.png', 1, '2025-12-04 05:44:36', NULL);
 
 --
 -- Indexes for dumped tables
@@ -250,9 +251,9 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `uniq_email` (`email`);
 
 --
--- Indexes for table `user_profiles`
+-- Indexes for table `student_profiles`
 --
-ALTER TABLE `user_profiles`
+ALTER TABLE `student_profiles`
   ADD PRIMARY KEY (`user_id`);
 
 --
@@ -312,9 +313,9 @@ ALTER TABLE `sessions`
   ADD CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
--- Constraints for table `user_profiles`
+-- Constraints for table `student_profiles`
 --
-ALTER TABLE `user_profiles`
+ALTER TABLE `student_profiles`
   ADD CONSTRAINT `fk_profile_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 

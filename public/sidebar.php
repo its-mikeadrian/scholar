@@ -12,7 +12,7 @@ function is_active_link(string $pattern, string $uri): bool
     <div class="flex h-full flex-col">
         <div class="px-4 py-4 border-b">
             <div class="flex items-center gap-3">
-                <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#1e88e5] text-white">■</span>
+                <img src="<?= htmlspecialchars(asset_url('images/logo.png'), ENT_QUOTES, 'UTF-8'); ?>" alt="Scholar logo" class="h-8 w-8 rounded-lg object-contain" />
                 <div>
                     <div class="text-base font-semibold">Scholar</div>
                     <div class="text-xs text-gray-500">San Luis</div>
@@ -36,7 +36,7 @@ function is_active_link(string $pattern, string $uri): bool
         <nav class="flex-1 overflow-y-auto px-3 py-4">
             <ul class="space-y-1">
                 <li>
-                    <a href="<?= route_url('menu-1') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-1', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/menu-1') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-1', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M4 4h8v8H4V4zm0 12h8v4H4v-4zm12-12h4v8h-4V4zm0 12h4v4h-4v-4z" />
                         </svg>
@@ -44,7 +44,7 @@ function is_active_link(string $pattern, string $uri): bool
                     </a>
                 </li>
                 <li>
-                    <a href="<?= route_url('menu-2') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-2', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/menu-2') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-2', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 5h12M4 9h12M4 13h8" />
                             <path d="M16 3h4v18H6a2 2 0 01-2-2V3" />
@@ -53,7 +53,7 @@ function is_active_link(string $pattern, string $uri): bool
                     </a>
                 </li>
                 <li>
-                    <a href="<?= route_url('menu-3') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-3', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/menu-3') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-3', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="5" y="6" width="14" height="12" rx="3" />
                             <circle cx="8" cy="12" r="1.5" />
@@ -63,7 +63,7 @@ function is_active_link(string $pattern, string $uri): bool
                     </a>
                 </li>
                 <li>
-                    <a href="<?= route_url('menu-4') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-4', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/menu-4') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-4', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 7h13l5 5v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                             <path d="M3 7l4-4h6l3 4" />
@@ -72,18 +72,18 @@ function is_active_link(string $pattern, string $uri): bool
                     </a>
                 </li>
                 <li>
-                    <a href="<?= route_url('menu-5') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-5', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/menu-5') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-5', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="7" cy="17" r="2" />
                             <circle cx="17" cy="7" r="2" />
                             <path d="M9 15l6-6" />
                             <path d="M13 9h4v4" />
                         </svg>
-                        <span>Menu 5</span>
+                        <span>Announcements</span>
                     </a>
                 </li>
                 <li>
-                    <a href="<?= route_url('menu-6') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-6', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/menu-6') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-6', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 22a5 5 0 005-5H7a5 5 0 005 5z" />
                             <path d="M12 3a6 6 0 016 6" />
@@ -93,7 +93,7 @@ function is_active_link(string $pattern, string $uri): bool
                     </a>
                 </li>
                 <li class="mt-3 border-t pt-3">
-                    <a href="<?= route_url('account/manager') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/account/manager', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
+                    <a href="<?= route_url('admin/account/manager') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/account/manager', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="8" r="4" />
                             <path d="M4 20a8 8 0 0116 0" />
@@ -131,7 +131,7 @@ function is_active_link(string $pattern, string $uri): bool
         <ul class="flex flex-col items-center gap-3">
             <li>
                 <div class="relative group">
-                    <a href="<?= route_url('menu-1') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                    <a href="<?= route_url('admin/menu-1') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M4 4h8v8H4V4zm0 12h8v4H4v-4zm12-12h4v8h-4V4zm0 12h4v4h-4v-4z" />
                         </svg></a>
                     <span class="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 rounded-md bg-[#1e88e5] px-2 py-1 text-xs text-white shadow-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100">Dashboard</span>
@@ -139,7 +139,7 @@ function is_active_link(string $pattern, string $uri): bool
             </li>
             <li>
                 <div class="relative group">
-                    <a href="<?= route_url('menu-2') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <a href="<?= route_url('admin/menu-2') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M4 5h12" />
                             <path d="M4 9h12" />
                             <path d="M4 13h8" />
@@ -150,7 +150,7 @@ function is_active_link(string $pattern, string $uri): bool
             </li>
             <li>
                 <div class="relative group">
-                    <a href="<?= route_url('menu-3') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <a href="<?= route_url('admin/menu-3') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="5" y="6" width="14" height="12" rx="3" />
                             <circle cx="8" cy="12" r="1.5" />
                             <path d="M11 12h6" />
@@ -160,7 +160,7 @@ function is_active_link(string $pattern, string $uri): bool
             </li>
             <li>
                 <div class="relative group">
-                    <a href="<?= route_url('menu-4') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <a href="<?= route_url('admin/menu-4') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 7h13l5 5v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
                             <path d="M3 7l4-4h6l3 4" />
                         </svg></a>
@@ -169,7 +169,7 @@ function is_active_link(string $pattern, string $uri): bool
             </li>
             <li>
                 <div class="relative group">
-                    <a href="<?= route_url('menu-5') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <a href="<?= route_url('admin/menu-5') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="7" cy="17" r="2" />
                             <circle cx="17" cy="7" r="2" />
                             <path d="M9 15l6-6" />
@@ -180,7 +180,7 @@ function is_active_link(string $pattern, string $uri): bool
             </li>
             <li>
                 <div class="relative group">
-                    <a href="<?= route_url('menu-6') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <a href="<?= route_url('admin/menu-6') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 22a5 5 0 005-5H7a5 5 0 005 5z" />
                             <path d="M12 3a6 6 0 016 6" />
                             <path d="M12 3a6 6 0 00-6 6" />
@@ -191,7 +191,7 @@ function is_active_link(string $pattern, string $uri): bool
         </ul>
     </nav>
     <div class="relative group">
-        <a href="<?= route_url('account/manager') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <a href="<?= route_url('admin/account/manager') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 20a8 8 0 0116 0" />
             </svg></a>

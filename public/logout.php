@@ -5,13 +5,13 @@ secure_session_start();
 // Enforce CSRF-protected POST for logout
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $_SESSION['error'] = 'Invalid logout request. Please try again.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
 if (!csrf_validate()) {
     $_SESSION['error'] = 'Invalid request token. Please refresh and try again.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -24,5 +24,5 @@ if (ini_get('session.use_cookies')) {
     setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], true);
 }
 session_destroy();
-header('Location: ' . route_url(''));
+header('Location: ' . route_url('admin'));
 exit;

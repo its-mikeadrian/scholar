@@ -136,78 +136,56 @@ unset($_SESSION['error'], $_SESSION['success'], $_SESSION['info']);
         window.AppData.applications = window.AppData.applications || [{
                 name: 'Dela Cruz, Juan',
                 yearLevel: '1st Year',
-                grade: 1.25,
-                gwa: 1.5,
                 status: 'For Review'
             },
             {
                 name: 'Santos, Maria',
                 yearLevel: '2nd Year',
-                grade: 1.75,
-                gwa: 1.7,
                 status: 'Accepted'
             },
             {
                 name: 'Reyes, Pedro',
                 yearLevel: '3rd Year',
-                grade: 1.50,
-                gwa: 1.6,
                 status: 'For Review'
             },
             {
                 name: 'Garcia, Ana',
                 yearLevel: '4th Year',
-                grade: 1.90,
-                gwa: 1.8,
                 status: 'Accepted'
             },
             {
                 name: 'Lim, Carlo',
                 yearLevel: '1st Year',
-                grade: 1.30,
-                gwa: 1.4,
                 status: 'For Review'
             },
             {
                 name: 'Tan, Lea',
                 yearLevel: '2nd Year',
-                grade: 1.60,
-                gwa: 1.6,
                 status: 'For Review'
             },
             {
                 name: 'Torres, Miguel',
                 yearLevel: '3rd Year',
-                grade: 1.45,
-                gwa: 1.5,
                 status: 'Accepted'
             },
             {
                 name: 'Domingo, Iris',
                 yearLevel: '4th Year',
-                grade: 1.85,
-                gwa: 1.7,
                 status: 'For Review'
             },
             {
                 name: 'Navarro, Joel',
                 yearLevel: '2nd Year',
-                grade: 1.70,
-                gwa: 1.7,
                 status: 'Accepted'
             },
             {
                 name: 'Cruz, Liza',
                 yearLevel: '3rd Year',
-                grade: 1.40,
-                gwa: 1.5,
                 status: 'For Review'
             },
             {
                 name: 'Ramos, Noel',
                 yearLevel: '1st Year',
-                grade: 1.20,
-                gwa: 1.3,
                 status: 'Accepted'
             }
         ];

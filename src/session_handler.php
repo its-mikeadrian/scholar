@@ -1,8 +1,6 @@
 <?php
 
-/**
- * Encrypted DB-backed session handler for SteelSync
- */
+
 require_once __DIR__ . '/../config/env.php';
 require_once __DIR__ . '/db.php';
 

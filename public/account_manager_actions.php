@@ -4,7 +4,7 @@ secure_session_start();
 require_once __DIR__ . '/../src/db.php';
 
 if (!isset($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -13,13 +13,13 @@ require_role(['admin', 'superadmin']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $_SESSION['error'] = 'Invalid request method.';
-    header('Location: ' . route_url('account/manager'));
+    header('Location: ' . route_url('admin/account/manager'));
     exit;
 }
 
 if (!csrf_validate()) {
     $_SESSION['error'] = 'Invalid request. Please refresh and try again.';
-    header('Location: ' . route_url('account/manager'));
+    header('Location: ' . route_url('admin/account/manager'));
     exit;
 }
 
@@ -59,17 +59,17 @@ if ($action === 'create') {
 
     if ($username === '' || strlen($username) < 3) {
         $_SESSION['error'] = 'Username must be at least 3 characters.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $_SESSION['error'] = 'Please provide a valid email.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     if ($password === '' || strlen($password) < 6) {
         $_SESSION['error'] = 'Password must be at least 6 characters.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     if (!in_array($role, ['student', 'admin', 'superadmin'], true)) {
@@ -77,7 +77,7 @@ if ($action === 'create') {
     }
     if (!user_can_manage_role($currentRole, $role)) {
         $_SESSION['error'] = 'You are not allowed to assign the selected role.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
 
@@ -88,7 +88,7 @@ if ($action === 'create') {
     if ($dupU->num_rows > 0) {
         $_SESSION['error'] = 'Username is already taken.';
         $dupU->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $dupU->close();
@@ -100,7 +100,7 @@ if ($action === 'create') {
     if ($dupE->num_rows > 0) {
         $_SESSION['error'] = 'Email is already registered.';
         $dupE->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $dupE->close();
@@ -109,19 +109,19 @@ if ($action === 'create') {
     $ins = $conn->prepare('INSERT INTO users (username, email, password, role, is_active) VALUES (?, ?, ?, ?, 1)');
     if (!$ins) {
         $_SESSION['error'] = 'Server error.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $ins->bind_param('ssss', $username, $email, $hash, $role);
     if (!$ins->execute()) {
         $_SESSION['error'] = 'Failed to create user.';
         $ins->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $ins->close();
     $_SESSION['success'] = 'User created successfully.';
-    header('Location: ' . route_url('account/manager'));
+    header('Location: ' . route_url('admin/account/manager'));
     exit;
 }
 
@@ -130,7 +130,7 @@ if ($action === 'update') {
     $row = $id ? find_user($conn, $id) : null;
     if (!$row) {
         $_SESSION['error'] = 'User not found.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
 
@@ -141,17 +141,17 @@ if ($action === 'update') {
 
     if (!user_can_manage_role($currentRole, $newRole)) {
         $_SESSION['error'] = 'You are not allowed to assign the selected role.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     if ($username === '' || strlen($username) < 3) {
         $_SESSION['error'] = 'Username must be at least 3 characters.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $_SESSION['error'] = 'Please provide a valid email.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
 
@@ -162,7 +162,7 @@ if ($action === 'update') {
     if ($dupU->num_rows > 0) {
         $_SESSION['error'] = 'Username is already taken.';
         $dupU->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $dupU->close();
@@ -174,7 +174,7 @@ if ($action === 'update') {
     if ($dupE->num_rows > 0) {
         $_SESSION['error'] = 'Email is already in use.';
         $dupE->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $dupE->close();
@@ -182,14 +182,14 @@ if ($action === 'update') {
     if ($password !== '') {
         if (strlen($password) < 6) {
             $_SESSION['error'] = 'Password must be at least 6 characters.';
-            header('Location: ' . route_url('account/manager'));
+            header('Location: ' . route_url('admin/account/manager'));
             exit;
         }
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $upd = $conn->prepare('UPDATE users SET username = ?, email = ?, password = ?, role = ? WHERE id = ?');
         if (!$upd) {
             $_SESSION['error'] = 'Server error.';
-            header('Location: ' . route_url('account/manager'));
+            header('Location: ' . route_url('admin/account/manager'));
             exit;
         }
         $upd->bind_param('ssssi', $username, $email, $hash, $newRole, $id);
@@ -197,7 +197,7 @@ if ($action === 'update') {
         $upd = $conn->prepare('UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?');
         if (!$upd) {
             $_SESSION['error'] = 'Server error.';
-            header('Location: ' . route_url('account/manager'));
+            header('Location: ' . route_url('admin/account/manager'));
             exit;
         }
         $upd->bind_param('sssi', $username, $email, $newRole, $id);
@@ -205,12 +205,12 @@ if ($action === 'update') {
     if (!$upd->execute()) {
         $_SESSION['error'] = 'Failed to update user.';
         $upd->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $upd->close();
     $_SESSION['success'] = 'User updated successfully.';
-    header('Location: ' . route_url('account/manager'));
+    header('Location: ' . route_url('admin/account/manager'));
     exit;
 }
 
@@ -219,39 +219,39 @@ if ($action === 'toggle_active') {
     $active = isset($_POST['active']) ? (int)$_POST['active'] : 1;
     if ($id === (int)$_SESSION['auth_user_id']) {
         $_SESSION['error'] = 'You cannot change your own activation status.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $row = $id ? find_user($conn, $id) : null;
     if (!$row) {
         $_SESSION['error'] = 'User not found.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     if (!user_can_manage_role($currentRole, (string)$row['role'])) {
         $_SESSION['error'] = 'Insufficient permissions to modify this user.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $upd = $conn->prepare('UPDATE users SET is_active = ? WHERE id = ?');
     if (!$upd) {
         $_SESSION['error'] = 'Server error.';
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $upd->bind_param('ii', $active, $id);
     if (!$upd->execute()) {
         $_SESSION['error'] = 'Failed to update status.';
         $upd->close();
-        header('Location: ' . route_url('account/manager'));
+        header('Location: ' . route_url('admin/account/manager'));
         exit;
     }
     $upd->close();
     $_SESSION['success'] = ($active === 1) ? 'User activated.' : 'User deactivated.';
-    header('Location: ' . route_url('account/manager'));
+    header('Location: ' . route_url('admin/account/manager'));
     exit;
 }
 
 $_SESSION['error'] = 'Unknown action.';
-header('Location: ' . route_url('account/manager'));
+header('Location: ' . route_url('admin/account/manager'));
 exit;

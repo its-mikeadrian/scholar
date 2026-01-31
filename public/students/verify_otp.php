@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../config/bootstrap.php';
 require_once __DIR__ . '/../../src/security.php';
 secure_session_start();
 require_once __DIR__ . '/../../src/db.php';
@@ -37,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (isset($_SESSION['pending_student_user_id'])) {
                 // Login flow for students
                 $userId = (int) $_SESSION['pending_student_user_id'];
+                $pendingUsername = (string) ($_SESSION['pending_student_username'] ?? '');
                 $stmt = $conn->prepare('SELECT id, otp, expires_at, is_used, attempt_count FROM login_otp WHERE user_id = ? AND is_used = 0 ORDER BY id DESC LIMIT 1');
                 $stmt->bind_param('i', $userId);
                 $stmt->execute();
@@ -48,12 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $feedback = 'No active OTP found. Please login again to request a new code.';
                 } else {
                     if ((int)$otpRow['attempt_count'] >= 5) {
-                        audit_login_event($conn, $userId, (string)($_SESSION['pending_student_username'] ?? ''), 'otp_attempt_limit', null, $ipAddr, $ua);
+                        audit_login_event($conn, $userId, $pendingUsername, 'otp_attempt_limit', null, $ipAddr, $ua);
                         $feedback = 'Too many incorrect attempts. Please login again to request a new code.';
                     } else {
                         $expiresTs = strtotime($otpRow['expires_at']);
                         if ($expiresTs !== false && $expiresTs < time()) {
-                            audit_login_event($conn, $userId, (string)($_SESSION['pending_student_username'] ?? ''), 'otp_expired', null, $ipAddr, $ua);
+                            audit_login_event($conn, $userId, $pendingUsername, 'otp_expired', null, $ipAddr, $ua);
                             $feedback = 'OTP has expired. Please login again to request a new code.';
                         } elseif (!password_verify($otpInput, $otpRow['otp'])) {
                             $attempts = (int) $otpRow['attempt_count'] + 1;
@@ -61,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $upd->bind_param('ii', $attempts, $otpRow['id']);
                             $upd->execute();
                             $upd->close();
-                            audit_login_event($conn, $userId, (string)($_SESSION['pending_student_username'] ?? ''), 'otp_invalid', null, $ipAddr, $ua);
+                            audit_login_event($conn, $userId, $pendingUsername, 'otp_invalid', null, $ipAddr, $ua);
                             $feedback = 'Incorrect OTP. Please try again.';
                         } else {
                             // mark used and login
@@ -79,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $roleNow = normalize_role((string)($rowr['role'] ?? 'student'));
                                 $activeFlag = isset($rowr['is_active']) ? (int)$rowr['is_active'] : 1;
                                 if ($activeFlag !== 1 || $roleNow !== 'student') {
-                                    audit_login_event($conn, $userId, (string)($_SESSION['pending_student_username'] ?? ''), 'role_denied_post_otp', $roleNow, $ipAddr, $ua);
+                                    audit_login_event($conn, $userId, $pendingUsername, 'role_denied_post_otp', $roleNow, $ipAddr, $ua);
                                     $_SESSION['error'] = 'Invalid username or password.';
                                     $rs->close();
                                     unset($_SESSION['pending_student_user_id'], $_SESSION['pending_student_username'], $_SESSION['pending_student_email']);
@@ -91,7 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $_SESSION['auth_role'] = 'student';
                                 session_regenerate_id(true);
                                 refresh_session_cookie_role_ttl();
-                                session_write_close();
                                 $rs->close();
                             }
                             unset($_SESSION['pending_student_user_id'], $_SESSION['pending_student_username'], $_SESSION['pending_student_email']);
@@ -100,15 +101,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 unset($_SESSION['pending_remember_me']);
                             }
 
-                            audit_login_event($conn, $userId, (string)($_SESSION['pending_student_username'] ?? ''), 'otp_verified', $_SESSION['auth_role'] ?? null, $ipAddr, $ua);
+                            $target = student_profile_completed($conn, $userId) ? route_url('students/home') : route_url('students/profile-setup');
+                            audit_login_event($conn, $userId, $pendingUsername, 'otp_verified', $_SESSION['auth_role'] ?? null, $ipAddr, $ua);
                             $_SESSION['success'] = 'Login successful!';
-                            header('Location: ' . route_url('students/home'));
+                            session_write_close();
+                            header('Location: ' . $target);
                             exit;
                         }
                     }
                 }
             } elseif (isset($_SESSION['pending_registration_id'])) {
                 $regId = (int) $_SESSION['pending_registration_id'];
+                $pendingRegUsername = (string) ($_SESSION['pending_registration_username'] ?? '');
                 $conn->query("CREATE TABLE IF NOT EXISTS pending_registrations (id INT UNSIGNED NOT NULL AUTO_INCREMENT, username VARCHAR(50) NOT NULL, email VARCHAR(255) NOT NULL, password_hash VARCHAR(255) NOT NULL, otp VARCHAR(255) NOT NULL, expires_at DATETIME NOT NULL, is_used TINYINT(1) NOT NULL DEFAULT 0, attempt_count INT UNSIGNED NOT NULL DEFAULT 0, ip_address VARCHAR(45) DEFAULT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY uniq_pending_email (email), UNIQUE KEY uniq_pending_username (username)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
                 $s = $conn->prepare('SELECT id, username, email, password_hash, otp, expires_at, is_used, attempt_count FROM pending_registrations WHERE id = ? LIMIT 1');
@@ -121,12 +125,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $feedback = 'No pending registration found. Please sign up again.';
                 } else {
                     if ((int)$reg['attempt_count'] >= 5) {
-                        audit_login_event($conn, null, (string)($_SESSION['pending_registration_username'] ?? ''), 'reg_otp_attempt_limit', null, $ipAddr, $ua);
+                        audit_login_event($conn, null, $pendingRegUsername, 'reg_otp_attempt_limit', null, $ipAddr, $ua);
                         $feedback = 'Too many incorrect attempts. Please sign up again to request a new code.';
                     } else {
                         $expiresTs = strtotime($reg['expires_at']);
                         if ($expiresTs !== false && $expiresTs < time()) {
-                            audit_login_event($conn, null, (string)($_SESSION['pending_registration_username'] ?? ''), 'reg_otp_expired', null, $ipAddr, $ua);
+                            audit_login_event($conn, null, $pendingRegUsername, 'reg_otp_expired', null, $ipAddr, $ua);
                             $feedback = 'OTP has expired. Please sign up again to request a new code.';
                         } elseif (!password_verify($otpInput, $reg['otp'])) {
                             $attempts = (int)$reg['attempt_count'] + 1;
@@ -134,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $upd->bind_param('ii', $attempts, $regId);
                             $upd->execute();
                             $upd->close();
-                            audit_login_event($conn, null, (string)($_SESSION['pending_registration_username'] ?? ''), 'reg_otp_invalid', null, $ipAddr, $ua);
+                            audit_login_event($conn, null, $pendingRegUsername, 'reg_otp_invalid', null, $ipAddr, $ua);
                             $feedback = 'Incorrect OTP. Please try again.';
                         } else {
                             $username = (string)$reg['username'];
@@ -167,26 +171,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     if ($ok) {
                                         $roleNow = 'student';
                                         $insU->bind_param('ssss', $username, $email, $pwdHash, $roleNow);
-                                        $insU->execute();
+                                        if (!$insU->execute()) {
+                                            $ok = false;
+                                        }
                                         $newUserId = (int)$insU->insert_id;
                                         $insU->close();
+                                        if ($newUserId <= 0) {
+                                            $ok = false;
+                                        }
                                         $mk = $conn->prepare('UPDATE pending_registrations SET is_used = 1 WHERE id = ?');
                                         if ($mk) {
                                             $mk->bind_param('i', $regId);
-                                            $mk->execute();
+                                            if (!$mk->execute()) {
+                                                $ok = false;
+                                            }
                                             $mk->close();
                                         }
-                                        $conn->commit();
-                                        $_SESSION['auth_user_id'] = $newUserId;
-                                        $_SESSION['auth_role'] = 'student';
-                                        session_regenerate_id(true);
-                                        refresh_session_cookie_role_ttl();
-                                        session_write_close();
-                                        unset($_SESSION['pending_registration_id'], $_SESSION['pending_registration_username'], $_SESSION['pending_registration_email']);
-                                        audit_login_event($conn, $newUserId, $username, 'reg_otp_verified', 'student', $ipAddr, $ua);
-                                        $_SESSION['success'] = 'Account created and logged in!';
-                                        header('Location: ' . route_url('students/home'));
-                                        exit;
+                                        if ($ok) {
+                                            $conn->commit();
+                                            $_SESSION['auth_user_id'] = $newUserId;
+                                            $_SESSION['auth_role'] = 'student';
+                                            session_regenerate_id(true);
+                                            refresh_session_cookie_role_ttl();
+                                            unset($_SESSION['pending_registration_id'], $_SESSION['pending_registration_username'], $_SESSION['pending_registration_email']);
+                                            audit_login_event($conn, $newUserId, $username, 'reg_otp_verified', 'student', $ipAddr, $ua);
+                                            $_SESSION['success'] = 'Account created and logged in!';
+                                            session_write_close();
+                                            header('Location: ' . route_url('students/profile-setup'));
+                                            exit;
+                                        }
+                                        $conn->rollback();
+                                        $feedback = 'Server error. Please try again later.';
                                     } else {
                                         $conn->rollback();
                                         $feedback = 'Server error. Please try again later.';

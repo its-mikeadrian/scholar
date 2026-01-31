@@ -4,7 +4,7 @@ secure_session_start();
 require_once __DIR__ . '/../src/auth.php';
 enforce_auth_for_page(basename(__FILE__));
 if (!isset($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 ?>
@@ -14,7 +14,7 @@ if (!isset($_SESSION['auth_user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Menu 6</title>
+    <title>Iskolar Nang Luis - EDUCATIONAL ASSISTANCE</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 

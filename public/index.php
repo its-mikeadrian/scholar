@@ -46,7 +46,13 @@ try {
 } catch (MethodNotAllowedException $e) {
     $response = new Response('Method Not Allowed', 405);
 } catch (ResourceNotFoundException $e) {
-    $response = new Response('Not Found', 404);
+    $notFoundScript = __DIR__ . '/404.php';
+    if (is_file($notFoundScript)) {
+        $response = render_script_to_response($notFoundScript);
+        $response->setStatusCode(404);
+    } else {
+        $response = new Response('Not Found', 404);
+    }
 } catch (\Throwable $e) {
     // Avoid leaking details in production. Log if needed.
     $response = new Response('Internal Server Error', 500);

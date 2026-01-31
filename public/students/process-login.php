@@ -1,10 +1,7 @@
 <?php
+require_once __DIR__ . '/../../config/bootstrap.php';
 require_once __DIR__ . '/../../src/security.php';
 secure_session_start();
-if (!empty($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url('students/home'));
-    exit;
-}
 require_once __DIR__ . '/../../src/db.php';
 require_once __DIR__ . '/../../config/env.php';
 require_once __DIR__ . '/../../src/mailer.php';
@@ -14,6 +11,13 @@ use PHPMailer\PHPMailer\PHPMailer;
 $autoload = __DIR__ . '/../../vendor/autoload.php';
 if (file_exists($autoload)) {
     require_once $autoload;
+}
+
+if (!empty($_SESSION['auth_user_id']) && auth_role() === 'student') {
+    $userId = (int) $_SESSION['auth_user_id'];
+    $target = student_profile_completed($conn, $userId) ? route_url('students/home') : route_url('students/profile-setup');
+    header('Location: ' . $target);
+    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

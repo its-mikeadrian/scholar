@@ -4,7 +4,7 @@ secure_session_start();
 require_once __DIR__ . '/../src/auth.php';
 enforce_auth_for_page(basename(__FILE__));
 if (!isset($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 ?>
@@ -14,7 +14,7 @@ if (!isset($_SESSION['auth_user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Menu 2</title>
+    <title>Iskolar Nang Luis - EDUCATIONAL ASSISTANCE</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -23,7 +23,7 @@ if (!isset($_SESSION['auth_user_id'])) {
     <?php require __DIR__ . '/sidebar.php'; ?>
     <div class="pt-14 lg:pl-16" id="appMain">
         <main id="app-content" class="max-w-7xl mx-auto px-4 py-6">
-            <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-semibold text-[#212121]">Applications</h2>
                 </div>
@@ -40,10 +40,8 @@ if (!isset($_SESSION['auth_user_id'])) {
                         <select id="sortSelect" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
                             <option value="name-asc">Name A-Z</option>
                             <option value="name-desc">Name Z-A</option>
-                            <option value="grade-asc">Grade ↑</option>
-                            <option value="grade-desc">Grade ↓</option>
-                            <option value="year-asc">Year ↑</option>
-                            <option value="year-desc">Year ↓</option>
+                            <option value="yearLevel-asc">Year ↑</option>
+                            <option value="yearLevel-desc">Year ↓</option>
                         </select>
                     </label>
                     <label class="sm:col-span-1 block">
@@ -62,7 +60,7 @@ if (!isset($_SESSION['auth_user_id'])) {
                         <span id="resultCount">0 results</span>
                     </div>
                     <div class="sm:col-span-1">
-                        <button id="clearFilters" class="rounded-xl border px-3 py-2 text-sm text-[#293D82] hover:bg-[#e3f2fd]" aria-label="Clear filters">Clear Filters</button>
+                        <button id="clearFilters" class="rounded-xl border px-3 py-2 text-sm text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Clear filters">Clear Filters</button>
                     </div>
                     <div class="sm:col-span-1 flex items-center gap-2 justify-end">
                         <label class="flex items-center gap-2 text-sm text-[#293D82]"><span>Per page</span>
@@ -72,22 +70,22 @@ if (!isset($_SESSION['auth_user_id'])) {
                                 <option>20</option>
                             </select>
                         </label>
-                        <button id="exportCsv" class="rounded-xl bg-[#1e88e5] px-3 py-2 text-white text-sm hover:bg-[#1976d2]" aria-label="Download CSV">Export CSV</button>
+                        <button id="exportCsv" class="rounded-xl bg-[#1e88e5] px-3 py-2 text-white text-sm hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Download CSV">Export CSV</button>
+                        <button id="openArchive" class="rounded-xl bg-[#1e88e5] px-3 py-2 text-white text-sm hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Open archive">Archive</button>
                     </div>
                 </div>
-                <div class="mt-2" id="chipsContainer">
+                <div class="mt-2 hidden" id="chipsContainer">
                     <div id="chips" class="flex flex-wrap gap-2"></div>
                 </div>
             </div>
 
-            <div class="mt-6 rounded-2xl border bg-white p-6">
+            <div class="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="border-b text-[#293D82]">
                             <tr class="text-left">
                                 <th class="px-3 py-2 cursor-pointer select-none" data-sort-key="name">Name</th>
                                 <th class="px-3 py-2 cursor-pointer select-none" data-sort-key="yearLevel">Year Level</th>
-                                <th class="px-3 py-2 cursor-pointer select-none" data-sort-key="grade">Inputted Grade</th>
                                 <th class="px-3 py-2">Documents</th>
                                 <th class="px-3 py-2">Status</th>
                             </tr>
@@ -99,8 +97,8 @@ if (!isset($_SESSION['auth_user_id'])) {
             <div class="mt-4 flex items-center justify-between">
                 <div class="text-xs text-[#293D82]" id="pageInfo"></div>
                 <div class="flex items-center gap-2">
-                    <button id="prevPage" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd]" aria-label="Previous page">Prev</button>
-                    <button id="nextPage" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd]" aria-label="Next page">Next</button>
+                    <button id="prevPage" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Previous page">Prev</button>
+                    <button id="nextPage" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Next page">Next</button>
                 </div>
             </div>
 
@@ -111,7 +109,6 @@ if (!isset($_SESSION['auth_user_id'])) {
                         <div class="flex items-center justify-between border-b px-4 py-3">
                             <div>
                                 <h3 id="docTitle" class="text-lg font-semibold text-[#212121]"></h3>
-                                <div id="docGwa" class="text-sm text-[#293D82]"></div>
                             </div>
                             <button id="docClose" class="rounded-xl p-2 hover:bg-gray-100 focus:ring-2 focus:ring-[#1e88e5]" aria-label="Close">✕</button>
                         </div>
@@ -139,86 +136,172 @@ if (!isset($_SESSION['auth_user_id'])) {
                 </div>
             </div>
 
+            <div id="archiveModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="archiveTitle">
+                <div id="archiveOverlay" class="fixed inset-0 bg-black/40 opacity-0 transition-opacity duration-300"></div>
+                <div class="flex min-h-screen items-center justify-center p-4">
+                    <div class="relative w-full max-w-5xl scale-95 opacity-0 rounded-2xl bg-white shadow-lg transition-all duration-300" id="archivePanel">
+                        <div class="flex items-center justify-between border-b px-4 py-3">
+                            <h3 id="archiveTitle" class="text-lg font-semibold text-[#212121]">Archive</h3>
+                            <button id="archiveClose" class="rounded-xl p-2 hover:bg-gray-100 focus:ring-2 focus:ring-[#1e88e5]" aria-label="Close">✕</button>
+                        </div>
+                        <div class="p-4">
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                                <label class="sm:col-span-1 flex items-center gap-2 rounded-xl border px-3 py-2 focus-within:ring-2 focus-within:ring-[#1e88e5]" aria-label="Search archive">
+                                    <svg class="h-5 w-5 text-[#293D82]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="7" />
+                                        <path d="M21 21l-4.3-4.3" />
+                                    </svg>
+                                    <input id="archiveSearch" type="text" placeholder="Search" class="w-full outline-none text-sm" />
+                                </label>
+                                <label class="sm:col-span-1 block">
+                                    <span class="mb-1 block text-xs text-[#293D82]">Year Level</span>
+                                    <select id="archiveYear" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
+                                        <option value="">All</option>
+                                        <option>1st Year</option>
+                                        <option>2nd Year</option>
+                                        <option>3rd Year</option>
+                                        <option>4th Year</option>
+                                    </select>
+                                </label>
+                                <label class="sm:col-span-1 block">
+                                    <span class="mb-1 block text-xs text-[#293D82]">Status</span>
+                                    <select id="archiveStatus" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
+                                        <option value="">All</option>
+                                        <option>Accepted</option>
+                                        <option>Rejected</option>
+                                    </select>
+                                </label>
+                                <label class="sm:col-span-1 block">
+                                    <span class="mb-1 block text-xs text-[#293D82]">Date</span>
+                                    <input id="archiveDate" type="date" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]" />
+                                </label>
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-between">
+                                <div class="text-sm text-[#293D82]" id="archiveResultCount">0 results</div>
+                                <label class="flex items-center gap-2 text-sm text-[#293D82]"><span>Per page</span>
+                                    <select id="archivePageSize" class="rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
+                                        <option>5</option>
+                                        <option selected>10</option>
+                                        <option>20</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="mt-4 overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="border-b text-[#293D82]">
+                                        <tr class="text-left">
+                                            <th class="px-3 py-2">Name</th>
+                                            <th class="px-3 py-2">Year Level</th>
+                                            <th class="px-3 py-2">Date</th>
+                                            <th class="px-3 py-2">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="archiveTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-4 flex items-center justify-between">
+                                <div class="text-xs text-[#293D82]" id="archivePageInfo"></div>
+                                <div class="flex items-center gap-2">
+                                    <button id="archivePrev" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Previous page">Prev</button>
+                                    <button id="archiveNext" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Next page">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <script data-page-script="true">
                 (function() {
                     var students = (window.AppData && Array.isArray(window.AppData.applications)) ? window.AppData.applications.slice() : [{
                             name: 'Dela Cruz, Juan',
                             yearLevel: '1st Year',
-                            grade: 1.25,
-                            gwa: 1.5,
                             status: 'For Review'
                         },
                         {
                             name: 'Santos, Maria',
                             yearLevel: '2nd Year',
-                            grade: 1.75,
-                            gwa: 1.7,
                             status: 'Accepted'
                         },
                         {
                             name: 'Reyes, Pedro',
                             yearLevel: '3rd Year',
-                            grade: 1.50,
-                            gwa: 1.6,
                             status: 'For Review'
                         },
                         {
                             name: 'Garcia, Ana',
                             yearLevel: '4th Year',
-                            grade: 1.90,
-                            gwa: 1.8,
                             status: 'Accepted'
                         },
                         {
                             name: 'Lim, Carlo',
                             yearLevel: '1st Year',
-                            grade: 1.30,
-                            gwa: 1.4,
                             status: 'For Review'
                         },
                         {
                             name: 'Tan, Lea',
                             yearLevel: '2nd Year',
-                            grade: 1.60,
-                            gwa: 1.6,
                             status: 'For Review'
                         },
                         {
                             name: 'Torres, Miguel',
                             yearLevel: '3rd Year',
-                            grade: 1.45,
-                            gwa: 1.5,
                             status: 'Accepted'
                         },
                         {
                             name: 'Domingo, Iris',
                             yearLevel: '4th Year',
-                            grade: 1.85,
-                            gwa: 1.7,
                             status: 'For Review'
                         },
                         {
                             name: 'Navarro, Joel',
                             yearLevel: '2nd Year',
-                            grade: 1.70,
-                            gwa: 1.7,
                             status: 'Accepted'
                         },
                         {
                             name: 'Cruz, Liza',
                             yearLevel: '3rd Year',
-                            grade: 1.40,
-                            gwa: 1.5,
                             status: 'For Review'
                         },
                         {
                             name: 'Ramos, Noel',
                             yearLevel: '1st Year',
-                            grade: 1.20,
-                            gwa: 1.3,
                             status: 'Accepted'
                         }
                     ];
+                    students.forEach(function(s, idx) {
+                        if (s && typeof s === 'object' && s._rowIndex == null) s._rowIndex = idx;
+                    });
+
+                    var ACTIVE_STATUSES = {
+                        'For Review': true,
+                        'Incomplete': true
+                    };
+                    var ARCHIVE_STATUSES = {
+                        'Accepted': true,
+                        'Rejected': true
+                    };
+
+                    students.forEach(function(s) {
+                        if (s && typeof s === 'object' && ARCHIVE_STATUSES[s.status] && !s.archivedDate) {
+                            s.archivedDate = (new Date()).toISOString().slice(0, 10);
+                        }
+                    });
+
+                    function getActiveBase() {
+                        return students.filter(function(s) {
+                            return !!ACTIVE_STATUSES[s.status];
+                        });
+                    }
+
+                    function getArchiveBase() {
+                        return students.filter(function(s) {
+                            return !!ARCHIVE_STATUSES[s.status];
+                        });
+                    }
                     var searchEl = document.getElementById('searchInput');
                     var sortEl = document.getElementById('sortSelect');
                     var yearEl = document.getElementById('yearSelect');
@@ -228,7 +311,6 @@ if (!isset($_SESSION['auth_user_id'])) {
                     var panel = document.getElementById('docPanel');
                     var closeBtn = document.getElementById('docClose');
                     var titleEl = document.getElementById('docTitle');
-                    var gwaEl = document.getElementById('docGwa');
                     var resultCount = document.getElementById('resultCount');
                     var pageInfo = document.getElementById('pageInfo');
                     var pageSizeEl = document.getElementById('pageSize');
@@ -236,9 +318,35 @@ if (!isset($_SESSION['auth_user_id'])) {
                     var nextBtn = document.getElementById('nextPage');
                     var clearBtn = document.getElementById('clearFilters');
                     var exportBtn = document.getElementById('exportCsv');
+                    var openArchiveBtn = document.getElementById('openArchive');
                     var ths = Array.prototype.slice.call(document.querySelectorAll('th[data-sort-key]'));
                     var page = 1;
                     var timer = null;
+
+                    var archiveModal = document.getElementById('archiveModal');
+                    var archiveOverlay = document.getElementById('archiveOverlay');
+                    var archivePanel = document.getElementById('archivePanel');
+                    var archiveClose = document.getElementById('archiveClose');
+                    var archiveSearchEl = document.getElementById('archiveSearch');
+                    var archiveYearEl = document.getElementById('archiveYear');
+                    var archiveStatusEl = document.getElementById('archiveStatus');
+                    var archiveDateEl = document.getElementById('archiveDate');
+                    var archiveResultCountEl = document.getElementById('archiveResultCount');
+                    var archivePageInfoEl = document.getElementById('archivePageInfo');
+                    var archivePageSizeEl = document.getElementById('archivePageSize');
+                    var archivePrevBtn = document.getElementById('archivePrev');
+                    var archiveNextBtn = document.getElementById('archiveNext');
+                    var archiveTbody = document.getElementById('archiveTableBody');
+                    var archivePage = 1;
+                    var archiveTimer = null;
+
+                    function todayDateValue() {
+                        var d = new Date();
+                        var y = String(d.getFullYear());
+                        var m = String(d.getMonth() + 1).padStart(2, '0');
+                        var day = String(d.getDate()).padStart(2, '0');
+                        return y + '-' + m + '-' + day;
+                    }
 
                     function getSort() {
                         var v = sortEl.value || 'name-asc';
@@ -267,7 +375,7 @@ if (!isset($_SESSION['auth_user_id'])) {
                     function filtered() {
                         var q = (searchEl.value || '').toLowerCase();
                         var y = yearEl.value || '';
-                        var data = students.slice();
+                        var data = getActiveBase();
                         if (q) data = data.filter(function(s) {
                             return s.name.toLowerCase().indexOf(q) !== -1;
                         });
@@ -292,15 +400,26 @@ if (!isset($_SESSION['auth_user_id'])) {
                         prevBtn.disabled = page <= 1;
                         nextBtn.disabled = page >= maxPage;
                         var html = slice.map(function(s, i) {
-                            var idx = start + i;
-                            var stClass = (s.status === 'Accepted') ? 'bg-green-600 text-white' : 'bg-amber-500 text-white';
-                            var badgeClass = (s.status === 'Accepted') ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-amber-100 text-amber-700 border border-amber-200';
+                            var rowIdx = s._rowIndex;
+                            var stClassMap = {
+                                'Accepted': 'bg-green-600 text-white',
+                                'For Review': 'bg-amber-500 text-white',
+                                'Incomplete': 'bg-gray-500 text-white',
+                                'Rejected': 'bg-red-600 text-white'
+                            };
+                            var badgeClassMap = {
+                                'Accepted': 'bg-green-100 text-green-700 border border-green-200',
+                                'For Review': 'bg-amber-100 text-amber-700 border border-amber-200',
+                                'Incomplete': 'bg-gray-100 text-gray-700 border border-gray-200',
+                                'Rejected': 'bg-red-100 text-red-700 border border-red-200'
+                            };
+                            var stClass = stClassMap[s.status] || 'bg-gray-500 text-white';
+                            var badgeClass = badgeClassMap[s.status] || 'bg-gray-100 text-gray-700 border border-gray-200';
                             return '<tr class="border-b hover:bg-gray-50">' +
                                 '<td class="px-3 py-2 text-[#212121]">' + s.name + '</td>' +
                                 '<td class="px-3 py-2 text-[#212121]">' + s.yearLevel + '</td>' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.grade + '</td>' +
-                                '<td class="px-3 py-2"><button class="rounded-xl bg-[#1e88e5] px-3 py-1 text-white text-xs hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" data-idx="' + idx + '">View</button></td>' +
-                                '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + s.status + '</span><select class="rounded-md px-2 py-1 text-xs focus:ring-2 focus:ring-[#1e88e5] ' + stClass + '" data-status-idx="' + idx + '"><option' + (s.status === 'For Review' ? ' selected' : '') + '>For Review</option><option' + (s.status === 'Accepted' ? ' selected' : '') + '>Accepted</option></select></div></td>' +
+                                '<td class="px-3 py-2"><button class="rounded-xl bg-[#1e88e5] px-3 py-1 text-white text-xs hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" data-idx="' + rowIdx + '">View</button></td>' +
+                                '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + s.status + '</span><select class="rounded-md px-2 py-1 text-xs focus:ring-2 focus:ring-[#1e88e5] ' + stClass + '" data-status-idx="' + rowIdx + '"><option' + (s.status === 'For Review' ? ' selected' : '') + '>For Review</option><option' + (s.status === 'Accepted' ? ' selected' : '') + '>Accepted</option><option' + (s.status === 'Incomplete' ? ' selected' : '') + '>Incomplete</option><option' + (s.status === 'Rejected' ? ' selected' : '') + '>Rejected</option></select></div></td>' +
                                 '</tr>';
                         }).join('');
                         tbody.innerHTML = html;
@@ -338,7 +457,6 @@ if (!isset($_SESSION['auth_user_id'])) {
 
                     function openModal(s) {
                         titleEl.textContent = s.name;
-                        gwaEl.textContent = 'GWA: ' + s.gwa;
                         modal.classList.remove('hidden');
                         requestAnimationFrame(function() {
                             overlay.classList.remove('opacity-0');
@@ -371,11 +489,111 @@ if (!isset($_SESSION['auth_user_id'])) {
                         }
                     }
 
+                    function openArchive() {
+                        if (!archiveModal) return;
+                        archivePage = 1;
+                        renderArchive();
+                        archiveModal.classList.remove('hidden');
+                        requestAnimationFrame(function() {
+                            if (archiveOverlay) {
+                                archiveOverlay.classList.remove('opacity-0');
+                                archiveOverlay.classList.add('opacity-100');
+                            }
+                            if (archivePanel) {
+                                archivePanel.classList.remove('opacity-0');
+                                archivePanel.classList.remove('scale-95');
+                                archivePanel.classList.add('opacity-100');
+                                archivePanel.classList.add('scale-100');
+                            }
+                            if (archiveClose) archiveClose.focus();
+                        });
+                        document.addEventListener('keydown', onArchiveKeyDown);
+                    }
+
+                    function closeArchive() {
+                        if (!archiveModal) return;
+                        if (archiveOverlay) {
+                            archiveOverlay.classList.add('opacity-0');
+                            archiveOverlay.classList.remove('opacity-100');
+                        }
+                        if (archivePanel) {
+                            archivePanel.classList.add('opacity-0');
+                            archivePanel.classList.add('scale-95');
+                            archivePanel.classList.remove('opacity-100');
+                            archivePanel.classList.remove('scale-100');
+                        }
+                        setTimeout(function() {
+                            archiveModal.classList.add('hidden');
+                        }, 300);
+                        document.removeEventListener('keydown', onArchiveKeyDown);
+                    }
+
+                    function onArchiveKeyDown(e) {
+                        if (e.key === 'Escape') closeArchive();
+                    }
+
+                    function archiveFiltered() {
+                        var q = (archiveSearchEl && archiveSearchEl.value ? archiveSearchEl.value : '').toLowerCase();
+                        var y = archiveYearEl ? (archiveYearEl.value || '') : '';
+                        var st = archiveStatusEl ? (archiveStatusEl.value || '') : '';
+                        var dt = archiveDateEl ? (archiveDateEl.value || '') : '';
+                        var data = getArchiveBase();
+                        if (q) data = data.filter(function(s) {
+                            return s.name.toLowerCase().indexOf(q) !== -1;
+                        });
+                        if (y) data = data.filter(function(s) {
+                            return s.yearLevel === y;
+                        });
+                        if (st) data = data.filter(function(s) {
+                            return s.status === st;
+                        });
+                        if (dt) data = data.filter(function(s) {
+                            return (s.archivedDate || '') === dt;
+                        });
+                        data.sort(function(a, b) {
+                            var av = String(a.name || '').toLowerCase();
+                            var bv = String(b.name || '').toLowerCase();
+                            if (av < bv) return -1;
+                            if (av > bv) return 1;
+                            return 0;
+                        });
+                        return data;
+                    }
+
+                    function renderArchive() {
+                        if (!archiveModal || !archiveTbody) return;
+                        var per = parseInt((archivePageSizeEl && archivePageSizeEl.value) ? archivePageSizeEl.value : '10', 10);
+                        var data = archiveFiltered();
+                        var total = data.length;
+                        var maxPage = Math.max(1, Math.ceil(total / per));
+                        if (archivePage > maxPage) archivePage = maxPage;
+                        var start = (archivePage - 1) * per;
+                        var end = Math.min(start + per, total);
+                        var slice = data.slice(start, end);
+                        if (archiveResultCountEl) archiveResultCountEl.textContent = String(total) + ' results';
+                        if (archivePageInfoEl) archivePageInfoEl.textContent = 'Showing ' + (total === 0 ? 0 : start + 1) + '–' + end + ' of ' + total + ' • Page ' + archivePage + ' of ' + maxPage;
+                        if (archivePrevBtn) archivePrevBtn.disabled = archivePage <= 1;
+                        if (archiveNextBtn) archiveNextBtn.disabled = archivePage >= maxPage;
+                        var badgeClassMap = {
+                            'Accepted': 'bg-green-100 text-green-700 border border-green-200',
+                            'Rejected': 'bg-red-100 text-red-700 border border-red-200'
+                        };
+                        archiveTbody.innerHTML = slice.map(function(s) {
+                            var badgeClass = badgeClassMap[s.status] || 'bg-gray-100 text-gray-700 border border-gray-200';
+                            return '<tr class="border-b hover:bg-gray-50">' +
+                                '<td class="px-3 py-2 text-[#212121]">' + s.name + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + s.yearLevel + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + (s.archivedDate || '') + '</td>' +
+                                '<td class="px-3 py-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + s.status + '</span></td>' +
+                                '</tr>';
+                        }).join('');
+                    }
+
                     function exportCsv() {
                         var rows = filtered().map(function(s) {
-                            return [s.name, s.yearLevel, s.grade, s.status];
+                            return [s.name, s.yearLevel, s.status];
                         });
-                        var header = ['Name', 'Year Level', 'Inputted Grade', 'Status'];
+                        var header = ['Name', 'Year Level', 'Status'];
                         var csv = [header].concat(rows).map(function(r) {
                             return r.map(function(c) {
                                 var v = String(c);
@@ -435,6 +653,41 @@ if (!isset($_SESSION['auth_user_id'])) {
                         renderChips();
                     });
                     exportBtn.addEventListener('click', exportCsv);
+                    if (openArchiveBtn) openArchiveBtn.addEventListener('click', openArchive);
+                    if (archiveClose) archiveClose.addEventListener('click', closeArchive);
+                    if (archivePrevBtn) archivePrevBtn.addEventListener('click', function() {
+                        if (archivePage > 1) {
+                            archivePage -= 1;
+                            renderArchive();
+                        }
+                    });
+                    if (archiveNextBtn) archiveNextBtn.addEventListener('click', function() {
+                        archivePage += 1;
+                        renderArchive();
+                    });
+                    if (archivePageSizeEl) archivePageSizeEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveYearEl) archiveYearEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveStatusEl) archiveStatusEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveDateEl) archiveDateEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveSearchEl) archiveSearchEl.addEventListener('input', function() {
+                        if (archiveTimer) clearTimeout(archiveTimer);
+                        archiveTimer = setTimeout(function() {
+                            archivePage = 1;
+                            renderArchive();
+                        }, 200);
+                    });
                     document.addEventListener('click', function(e) {
                         var v = e.target.closest('button[data-idx]');
                         if (v) {
@@ -449,6 +702,14 @@ if (!isset($_SESSION['auth_user_id'])) {
                         }
                         if (modal && !panel.contains(e.target) && !e.target.closest('#docPanel') && !e.target.closest('button[data-idx]')) {
                             if (!modal.classList.contains('hidden')) closeModal();
+                        }
+                        var ac = e.target.closest('#archiveClose');
+                        if (ac) {
+                            closeArchive();
+                            return;
+                        }
+                        if (archiveModal && !archiveModal.classList.contains('hidden') && archivePanel && !archivePanel.contains(e.target) && !e.target.closest('#archivePanel') && !e.target.closest('#openArchive')) {
+                            closeArchive();
                         }
                         var chip = e.target.closest('button[data-clear]');
                         if (chip) {
@@ -475,8 +736,12 @@ if (!isset($_SESSION['auth_user_id'])) {
                         if (sel) {
                             var i = parseInt(sel.getAttribute('data-status-idx'), 10);
                             students[i].status = sel.value;
+                            if (ARCHIVE_STATUSES[sel.value]) {
+                                if (!students[i].archivedDate) students[i].archivedDate = todayDateValue();
+                            }
                             if (window.AppData) window.AppData.applications = students.slice();
                             render();
+                            if (archiveModal && !archiveModal.classList.contains('hidden')) renderArchive();
                         }
                     });
                     render();

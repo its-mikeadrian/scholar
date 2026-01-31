@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../src/security.php';
 secure_session_start();
 if (!empty($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url('menu-1'));
+    header('Location: ' . route_url('admin/menu-1'));
     exit;
 }
 require_once __DIR__ . '/../src/db.php';
@@ -17,13 +17,13 @@ if (file_exists($autoload)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
 if (!csrf_validate()) {
     $_SESSION['error'] = 'Invalid request. Please refresh and try again.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -32,7 +32,7 @@ $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
 
 if ($username === '' || $password === '') {
     $_SESSION['error'] = 'Username and password are required.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -40,7 +40,7 @@ $sql = "SELECT id, username, email, password, role, is_active FROM users WHERE u
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
     $_SESSION['error'] = 'Server error. Please try again later.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 $stmt->bind_param('s', $username);
@@ -67,7 +67,7 @@ if (!$user) {
     password_verify($password, password_hash('dummy', PASSWORD_DEFAULT));
     audit_login_event($conn, null, $username, 'invalid_credentials', null, $ipAddr, $ua);
     $_SESSION['error'] = 'Invalid username or password.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -90,7 +90,7 @@ if ($attemptRow && !empty($attemptRow['locked_until'])) {
         $mins = max(1, (int) ceil(($lockedTs - time()) / 60));
         audit_login_event($conn, (int)$user['id'], (string)$user['username'], 'locked', normalize_role((string)($user['role'] ?? 'student')), $ipAddr, $ua);
         $_SESSION['error'] = 'Account locked due to multiple failed attempts. Try again in ' . $mins . ' minute(s).';
-        header('Location: ' . route_url(''));
+        header('Location: ' . route_url('admin'));
         exit;
     }
 }
@@ -119,7 +119,7 @@ if (!$hashed || !password_verify($password, $hashed)) {
     } else {
         $_SESSION['error'] = 'Invalid username or password.';
     }
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -145,13 +145,13 @@ $activeFlag = isset($user['is_active']) ? (int)$user['is_active'] : 1;
 if ($activeFlag !== 1) {
     audit_login_event($conn, (int)$user['id'], (string)$user['username'], 'inactive', $normalizedRole, $ipAddr, $ua);
     $_SESSION['error'] = 'Account is deactivated. Contact support.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 if (!in_array($normalizedRole, ['admin', 'superadmin'], true)) {
     audit_login_event($conn, (int)$user['id'], (string)$user['username'], 'role_denied', $normalizedRole, $ipAddr, $ua);
     $_SESSION['error'] = 'Invalid username or password.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -166,7 +166,7 @@ $insertSql = "INSERT INTO login_otp (user_id, email, otp, expires_at, is_used, i
 $ins = $conn->prepare($insertSql);
 if (!$ins) {
     $_SESSION['error'] = 'Server error (OTP). Please try again later.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 $ins->bind_param('issss', $user['id'], $user['email'], $otpHash, $expiresAt, $ip);
@@ -192,7 +192,7 @@ try {
 } catch (Throwable $e) {
     error_log('Failed to send OTP email: ' . $e->getMessage());
     $_SESSION['error'] = 'Unable to send OTP email. Please try again later.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
@@ -204,5 +204,5 @@ if (!empty($_POST['remember_me'])) {
 }
 $_SESSION['success'] = 'OTP sent to your email. Please check and verify.';
 
-header('Location: ' . route_url('verify-otp'));
+header('Location: ' . route_url('admin/verify-otp'));
 exit;

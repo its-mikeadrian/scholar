@@ -4,7 +4,7 @@ secure_session_start();
 require_once __DIR__ . '/../src/auth.php';
 enforce_auth_for_page(basename(__FILE__));
 if (!isset($_SESSION['auth_user_id'])) {
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 ?>
@@ -14,7 +14,7 @@ if (!isset($_SESSION['auth_user_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Menu 1</title>
+    <title>Iskolar Nang Luis - EDUCATIONAL ASSISTANCE</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -23,86 +23,125 @@ if (!isset($_SESSION['auth_user_id'])) {
     <?php require __DIR__ . '/sidebar.php'; ?>
     <div class="pt-14 lg:pl-16" id="appMain">
         <main id="app-content" class="max-w-7xl mx-auto px-4 py-6">
-            <div class="rounded-2xl bg-white p-6 shadow-sm">
+            <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-xl font-semibold text-[#212121]">Dashboard Analytics</h2>
-                </div>
-                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                    <div class="rounded-2xl border p-4">
-                        <div class="text-xs text-[#293D82]">Applications</div>
-                        <div id="metricTotalApps" class="mt-1 text-2xl font-semibold">0</div>
-                    </div>
-                    <div class="rounded-2xl border p-4">
-                        <div class="text-xs text-[#293D82]">Accepted</div>
-                        <div id="metricAccepted" class="mt-1 text-2xl font-semibold">0</div>
-                    </div>
-                    <div class="rounded-2xl border p-4">
-                        <div class="text-xs text-[#293D82]">For Review</div>
-                        <div id="metricForReview" class="mt-1 text-2xl font-semibold">0</div>
-                    </div>
-                    <div class="rounded-2xl border p-4">
-                        <div class="text-xs text-[#293D82]">Avg GWA</div>
-                        <div id="metricAvgGwa" class="mt-1 text-2xl font-semibold">0.00</div>
-                    </div>
-                    <div class="rounded-2xl border p-4">
-                        <div class="text-xs text-[#293D82]">Paid</div>
-                        <div id="metricPaid" class="mt-1 text-2xl font-semibold">0</div>
-                    </div>
-                    <div class="rounded-2xl border p-4">
-                        <div class="text-xs text-[#293D82]">Unpaid</div>
-                        <div id="metricUnpaid" class="mt-1 text-2xl font-semibold">0</div>
+                    <div>
+                        <h2 class="text-xl font-semibold text-[#212121]">Dashboard Analytics</h2>
+                        <div class="mt-1 text-xs text-[#293D82]">Overview of applications and payouts</div>
                     </div>
                 </div>
+                <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+                    <div class="rounded-2xl border border-slate-100 bg-[#f8fbff] p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs text-[#293D82]">Applications</div>
+                                <div id="metricTotalApps" class="mt-1 text-2xl font-semibold text-[#212121]">0</div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                                    <path d="M8 7h8" />
+                                    <path d="M8 11h8" />
+                                    <path d="M8 15h5" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-100 bg-[#f8fbff] p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs text-[#293D82]">Accepted</div>
+                                <div id="metricAccepted" class="mt-1 text-2xl font-semibold text-[#212121]">0</div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-100 bg-[#f8fbff] p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs text-[#293D82]">For Review</div>
+                                <div id="metricForReview" class="mt-1 text-2xl font-semibold text-[#212121]">0</div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 8v4" />
+                                    <path d="M12 16h.01" />
+                                    <circle cx="12" cy="12" r="9" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-100 bg-[#f8fbff] p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs text-[#293D82]">Paid</div>
+                                <div id="metricPaid" class="mt-1 text-2xl font-semibold text-[#212121]">0</div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="9" />
+                                    <path d="M9 12l2 2 4-4" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-100 bg-[#f8fbff] p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs text-[#293D82]">Unpaid</div>
+                                <div id="metricUnpaid" class="mt-1 text-2xl font-semibold text-[#212121]">0</div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 9v4" />
+                                    <path d="M12 17h.01" />
+                                    <circle cx="12" cy="12" r="9" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                    <div class="rounded-2xl border p-6">
-                        <div class="mb-2 text-sm font-medium text-[#212121]">Year Level Distribution</div>
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-24 text-xs text-[#293D82]">1st Year</div>
-                                <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                                    <div id="barY1" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
-                                </div>
-                                <div id="valY1" class="w-10 text-xs text-right">0</div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-24 text-xs text-[#293D82]">2nd Year</div>
-                                <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                                    <div id="barY2" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
-                                </div>
-                                <div id="valY2" class="w-10 text-xs text-right">0</div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-24 text-xs text-[#293D82]">3rd Year</div>
-                                <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                                    <div id="barY3" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
-                                </div>
-                                <div id="valY3" class="w-10 text-xs text-right">0</div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="w-24 text-xs text-[#293D82]">4th Year</div>
-                                <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                                    <div id="barY4" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
-                                </div>
-                                <div id="valY4" class="w-10 text-xs text-right">0</div>
-                            </div>
-                        </div>
+            <div class="mt-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-[#212121]">Year Level Distribution</div>
+                        <div class="mt-1 text-xs text-[#293D82]">Counts by year level</div>
                     </div>
-                    <div class="rounded-2xl border p-6">
-                        <div class="mb-2 text-sm font-medium text-[#212121]">Top 5 by Grade</div>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-sm">
-                                <thead class="border-b text-[#293D82]">
-                                    <tr class="text-left">
-                                        <th class="px-3 py-2">Name</th>
-                                        <th class="px-3 py-2">Year Level</th>
-                                        <th class="px-3 py-2">Grade</th>
-                                        <th class="px-3 py-2">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="topTable"></tbody>
-                            </table>
+                </div>
+                <div class="mt-4 space-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-24 text-xs text-[#293D82]">1st Year</div>
+                        <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
+                            <div id="barY1" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
                         </div>
+                        <div id="valY1" class="w-10 text-xs text-right text-[#212121]">0</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-24 text-xs text-[#293D82]">2nd Year</div>
+                        <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
+                            <div id="barY2" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                        </div>
+                        <div id="valY2" class="w-10 text-xs text-right text-[#212121]">0</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-24 text-xs text-[#293D82]">3rd Year</div>
+                        <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
+                            <div id="barY3" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                        </div>
+                        <div id="valY3" class="w-10 text-xs text-right text-[#212121]">0</div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-24 text-xs text-[#293D82]">4th Year</div>
+                        <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
+                            <div id="barY4" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                        </div>
+                        <div id="valY4" class="w-10 text-xs text-right text-[#212121]">0</div>
                     </div>
                 </div>
             </div>
@@ -124,14 +163,6 @@ if (!isset($_SESSION['auth_user_id'])) {
                         if (el) el.textContent = String(v);
                     }
 
-                    function byYearLabel(y) {
-                        if (y === '1st Year') return 'Y1';
-                        if (y === '2nd Year') return 'Y2';
-                        if (y === '3rd Year') return 'Y3';
-                        if (y === '4th Year') return 'Y4';
-                        return '';
-                    }
-
                     function render() {
                         var apps = (window.AppData && Array.isArray(window.AppData.applications)) ? window.AppData.applications : [];
                         var checklist = (window.AppData && Array.isArray(window.AppData.checklist)) ? window.AppData.checklist : [];
@@ -142,13 +173,6 @@ if (!isset($_SESSION['auth_user_id'])) {
                         var forReview = apps.filter(function(a) {
                             return a.status === 'For Review';
                         }).length;
-                        var avgGwa = 0;
-                        if (apps.length > 0) {
-                            var sum = apps.reduce(function(acc, a) {
-                                return acc + (a.gwa || 0);
-                            }, 0);
-                            avgGwa = (sum / apps.length);
-                        }
                         var paid = checklist.filter(function(i) {
                             return !!i.paid;
                         }).length;
@@ -156,7 +180,6 @@ if (!isset($_SESSION['auth_user_id'])) {
                         text('metricTotalApps', totalApps);
                         text('metricAccepted', accepted);
                         text('metricForReview', forReview);
-                        text('metricAvgGwa', avgGwa.toFixed(2));
                         text('metricPaid', paid);
                         text('metricUnpaid', unpaid);
                         var y1 = apps.filter(function(a) {
@@ -180,15 +203,6 @@ if (!isset($_SESSION['auth_user_id'])) {
                         setVal('valY3', y3);
                         setWidth('barY4', y4 * 100 / maxY);
                         setVal('valY4', y4);
-                        var sorted = apps.slice().sort(function(a, b) {
-                            return (a.grade || 0) < (b.grade || 0) ? -1 : ((a.grade || 0) > (b.grade || 0) ? 1 : 0);
-                        });
-                        var top = sorted.slice(0, 5);
-                        var rows = top.map(function(s) {
-                            return '<tr class="border-b hover:bg-gray-50"><td class="px-3 py-2 text-[#212121]">' + s.name + '</td><td class="px-3 py-2 text-[#212121]">' + s.yearLevel + '</td><td class="px-3 py-2 text-[#212121]">' + (s.grade || '') + '</td><td class="px-3 py-2 text-[#212121]">' + (s.status || '') + '</td></tr>';
-                        }).join('');
-                        var tt = document.getElementById('topTable');
-                        if (tt) tt.innerHTML = rows;
                     }
                     render();
                 })();

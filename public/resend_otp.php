@@ -13,19 +13,19 @@ if (file_exists($autoload)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . route_url('verify-otp'));
+    header('Location: ' . route_url('admin/verify-otp'));
     exit;
 }
 
 if (!isset($_SESSION['pending_user_id'])) {
     $_SESSION['error'] = 'No pending login. Please login again.';
-    header('Location: ' . route_url(''));
+    header('Location: ' . route_url('admin'));
     exit;
 }
 
 if (!csrf_validate()) {
     $_SESSION['error'] = 'Invalid request. Please refresh and try again.';
-    header('Location: ' . route_url('verify-otp'));
+    header('Location: ' . route_url('admin/verify-otp'));
     exit;
 }
 
@@ -51,7 +51,7 @@ if ($lastRow && isset($lastRow['elapsed'])) {
     $remaining = $minIntervalSec - $elapsed;
     if ($remaining > 0) {
         $_SESSION['error'] = 'Please wait ' . $remaining . ' seconds before requesting another code.';
-        header('Location: ' . route_url('verify-otp'));
+        header('Location: ' . route_url('admin/verify-otp'));
         exit;
     }
 }
@@ -65,7 +65,7 @@ $windowStmt->close();
 
 if ((int)$windowRow['cnt'] >= $maxSendsCount) {
     $_SESSION['error'] = 'Too many OTP requests. Please try again in ' . $maxSendsWindowMin . ' minutes.';
-    header('Location: ' . route_url('verify-otp'));
+    header('Location: ' . route_url('admin/verify-otp'));
     exit;
 }
 
@@ -79,7 +79,7 @@ $insertSql = 'INSERT INTO login_otp (user_id, email, otp, expires_at, is_used, i
 $ins = $conn->prepare($insertSql);
 if (!$ins) {
     $_SESSION['error'] = 'Server error (OTP). Please try again later.';
-    header('Location: ' . route_url('verify-otp'));
+    header('Location: ' . route_url('admin/verify-otp'));
     exit;
 }
 $ins->bind_param('issss', $userId, $email, $otpHash, $expiresAt, $ip);
@@ -106,5 +106,5 @@ try {
     $_SESSION['error'] = 'Unable to send OTP email. Please try again later.';
 }
 
-header('Location: ' . route_url('verify-otp'));
+header('Location: ' . route_url('admin/verify-otp'));
 exit;

@@ -41,7 +41,11 @@ function enforce_auth_for_page(string $pageBaseName): void
     $role = current_role_for_auth();
     $allowed = $permissions[$role] ?? [];
     if (!in_array($pageBaseName, $allowed, true)) {
-        header('Location: ' . route_url('menu-1'));
+        if ($role === 'student') {
+            header('Location: ' . route_url('students/home'));
+        } else {
+            header('Location: ' . route_url('admin/menu-1'));
+        }
         exit;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../config/bootstrap.php';
 require_once __DIR__ . '/../../src/security.php';
 secure_session_start();
 require_once __DIR__ . '/../../src/db.php';
@@ -28,18 +29,7 @@ $errors = [];
 if ($first === '') $errors[] = 'First name required';
 if ($last === '') $errors[] = 'Last name required';
 
-// prepare user_profiles table
-$create = "CREATE TABLE IF NOT EXISTS user_profiles (
-  user_id INT UNSIGNED NOT NULL PRIMARY KEY,
-  first_name VARCHAR(100) NULL,
-  last_name VARCHAR(100) NULL,
-  address VARCHAR(255) NULL,
-  photo_path VARCHAR(255) NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_profile_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-$conn->query($create);
+ensure_student_profiles_table($conn);
 
 // handle photo
 if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
@@ -66,9 +56,10 @@ if ($file['size'] > 2 * 1024 * 1024) {
 }
 
 $ext = $allowed[$file['type']];
-$uploaddir = __DIR__ . '/../../storage/uploads/students/' . $userId;
+// Change upload directory to public/uploads so it is accessible via URL
+$uploaddir = __DIR__ . '/../../public/uploads/students/' . $userId;
 if (!is_dir($uploaddir)) mkdir($uploaddir, 0755, true);
-$filename = 'profile' . $ext;
+$filename = 'profile_' . time() . $ext; // Add timestamp to avoid caching issues
 $dest = $uploaddir . DIRECTORY_SEPARATOR . $filename;
 if (!move_uploaded_file($file['tmp_name'], $dest)) {
     $_SESSION['error'] = 'Failed to save uploaded file.';
@@ -76,10 +67,10 @@ if (!move_uploaded_file($file['tmp_name'], $dest)) {
     exit;
 }
 
-$relpath = 'storage/uploads/students/' . $userId . '/' . $filename;
+$relpath = 'uploads/students/' . $userId . '/' . $filename;
 
 // insert or update profile
-$up = $conn->prepare('INSERT INTO user_profiles (user_id, first_name, last_name, address, photo_path) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE first_name = VALUES(first_name), last_name = VALUES(last_name), address = VALUES(address), photo_path = VALUES(photo_path)');
+$up = $conn->prepare('INSERT INTO student_profiles (user_id, first_name, last_name, address, photo_path, is_completed) VALUES (?, ?, ?, ?, ?, 1) ON DUPLICATE KEY UPDATE first_name = VALUES(first_name), last_name = VALUES(last_name), address = VALUES(address), photo_path = VALUES(photo_path), is_completed = 1');
 $up->bind_param('issss', $userId, $first, $last, $address, $relpath);
 if (!$up->execute()) {
     error_log('Failed to save profile: ' . $up->error);
