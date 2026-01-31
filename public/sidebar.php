@@ -62,6 +62,7 @@ function is_active_link(string $pattern, string $uri): bool
                         <span>Payout Checklist</span>
                     </a>
                 </li>
+                <!-- 
                 <li>
                     <a href="<?= route_url('admin/menu-4') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-4', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -71,6 +72,7 @@ function is_active_link(string $pattern, string $uri): bool
                         <span>Documents</span>
                     </a>
                 </li>
+                -->
                 <li>
                        <a href="<?= route_url('menu-5') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/menu-5', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -82,6 +84,7 @@ function is_active_link(string $pattern, string $uri): bool
                         <span>Announcements</span>
                     </a>
                 </li>
+                <!-- 
                 <li>
                     <a href="<?= route_url('admin/menu-6') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/menu-6', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -92,6 +95,7 @@ function is_active_link(string $pattern, string $uri): bool
                         <span>Menu 6</span>
                     </a>
                 </li>
+                -->
                 <li class="mt-3 border-t pt-3">
                     <a href="<?= route_url('admin/account/manager') ?>" data-spa="true" class="flex items-center gap-3 px-3 py-2 rounded-2xl transition-transform duration-150 ease-out hover:translate-x-1 <?= is_active_link('/admin/account/manager', $uri) ? 'bg-[#1e88e5] text-white' : 'text-[#293D82] hover:bg-[#e3f2fd]' ?>">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -158,6 +162,7 @@ function is_active_link(string $pattern, string $uri): bool
                     <span class="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 rounded-md bg-[#1e88e5] px-2 py-1 text-xs text-white shadow-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100">Payout Checklist</span>
                 </div>
             </li>
+            <!-- 
             <li>
                 <div class="relative group">
                     <a href="<?= route_url('admin/menu-4') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -167,6 +172,7 @@ function is_active_link(string $pattern, string $uri): bool
                     <span class="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 rounded-md bg-[#1e88e5] px-2 py-1 text-xs text-white shadow-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100">Documents</span>
                 </div>
             </li>
+            -->
             <li>
                 <div class="relative group">
                     <a href="<?= route_url('menu-5') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -178,6 +184,7 @@ function is_active_link(string $pattern, string $uri): bool
                     <span class="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 rounded-md bg-[#1e88e5] px-2 py-1 text-xs text-white shadow-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100">Announcement</span>
                 </div>
             </li>
+            <!-- 
             <li>
                 <div class="relative group">
                     <a href="<?= route_url('admin/menu-6') ?>" data-spa="true" class="inline-grid h-10 w-10 place-items-center rounded-xl text-[#293D82] hover:bg-[#e3f2fd]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -188,6 +195,7 @@ function is_active_link(string $pattern, string $uri): bool
                     <span class="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 rounded-md bg-[#1e88e5] px-2 py-1 text-xs text-white shadow-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100">Menu 6</span>
                 </div>
             </li>
+            -->
         </ul>
     </nav>
     <div class="relative group">

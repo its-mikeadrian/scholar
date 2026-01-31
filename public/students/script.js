@@ -6,6 +6,7 @@ const loginInline = document.getElementById('login-inline');
 const resendBtn = document.getElementById('resend-otp');
 const forgotLink = document.getElementById('forgot-link');
 const overlay = document.getElementById('forgot-overlay');
+const forgotForm = document.getElementById('student-forgot-form');
 const sendReset = document.getElementById('send-reset');
 const cancelReset = document.getElementById('cancel-reset');
 const closeReset = document.getElementById('close-reset');
@@ -108,24 +109,21 @@ if (overlay) {
     });
 }
 
-if (sendReset) {
-    sendReset.addEventListener('click', (e) => {
-        e.preventDefault();
+if (forgotForm) {
+    forgotForm.addEventListener('submit', (e) => {
         if (!forgotEmail) return;
         const value = forgotEmail.value.trim();
         if (!isValidEmail(value)) {
+            e.preventDefault();
             if (window.showToast) {
                 window.showToast('error', 'Enter a valid email');
             }
             return;
         }
-        sendReset.disabled = true;
-        sendReset.textContent = 'Sending...';
-        setTimeout(() => {
-            sendReset.disabled = false;
-            sendReset.textContent = 'Send Reset Link';
-            closeForgot();
-        }, 1200);
+        if (sendReset) {
+            sendReset.disabled = true;
+            sendReset.textContent = 'Sending...';
+        }
     });
 }
 
@@ -136,7 +134,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Toast component
-(function() {
+(function () {
     const ensureContainer = () => {
         let c = document.getElementById('toast-container');
         if (!c) {
@@ -154,7 +152,7 @@ document.addEventListener('keydown', (e) => {
         warning: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>'
     };
 
-    window.showToast = function(type, message, duration = 5000) {
+    window.showToast = function (type, message, duration = 5000) {
         const c = ensureContainer();
         const t = document.createElement('div');
         t.className = 'toast ' + (type || 'info');

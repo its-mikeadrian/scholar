@@ -33,6 +33,7 @@ sessions/
 
 # IDE / Editor
 .vscode/
+.trae/
 .idea/
 *.sublime-workspace
 *.sublime-project
