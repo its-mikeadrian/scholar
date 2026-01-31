@@ -85,11 +85,14 @@ if (!empty($_SESSION['auth_user_id'])) {
                 </div>
                 <h2 id="forgot-title">Reset Administrator Password</h2>
                 <p>Enter your email address to receive a reset link.</p>
-                <input type="email" id="forgot-email" placeholder="Email Address" inputmode="email" aria-label="Email address for password reset">
-                <div class="modal-actions">
-                    <button type="button" id="send-reset">Send Reset Link</button>
-                    <button type="button" class="secondary" id="cancel-reset">Cancel</button>
-                </div>
+                <form id="admin-forgot-form" method="POST" action="<?= route_url('admin/forgot-password') ?>" novalidate autocomplete="off">
+                    <?= csrf_input(); ?>
+                    <input type="email" id="forgot-email" name="email" placeholder="Email Address" inputmode="email" autocomplete="email" aria-label="Email address for password reset" required>
+                    <div class="modal-actions">
+                        <button type="submit" id="send-reset">Send Reset Link</button>
+                        <button type="button" class="secondary" id="cancel-reset">Cancel</button>
+                    </div>
+                </form>
             </div>
         </div>
     </main>

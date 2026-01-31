@@ -9,6 +9,7 @@ const forgotLink = document.getElementById('forgot-link');
 const overlay = document.getElementById('admin-forgot-overlay');
 const closeReset = document.getElementById('close-reset');
 const cancelReset = document.getElementById('cancel-reset');
+const forgotForm = document.getElementById('admin-forgot-form');
 const sendReset = document.getElementById('send-reset');
 const forgotEmail = document.getElementById('forgot-email');
 
@@ -104,18 +105,18 @@ if (closeReset) {
 if (overlay) {
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeForgot(); });
 }
-if (sendReset) {
-  sendReset.addEventListener('click', (e) => {
-    e.preventDefault();
+if (forgotForm) {
+  forgotForm.addEventListener('submit', (e) => {
     const value = (forgotEmail?.value || '').trim();
-    if (!isValidEmail(value)) { if (window.showToast) window.showToast('error', 'Enter a valid email'); return; }
-    sendReset.disabled = true;
-    sendReset.textContent = 'Sending...';
-    setTimeout(() => {
-      sendReset.disabled = false;
-      sendReset.textContent = 'Send Reset Link';
-      closeForgot();
-    }, 1200);
+    if (!isValidEmail(value)) {
+      e.preventDefault();
+      if (window.showToast) window.showToast('error', 'Enter a valid email');
+      return;
+    }
+    if (sendReset) {
+      sendReset.disabled = true;
+      sendReset.textContent = 'Sending...';
+    }
   });
 }
 

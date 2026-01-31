@@ -227,6 +227,24 @@ $routes->add('admin/process_login', new Route(
     [],
     ['POST']
 ));
+$routes->add('admin/forgot_password', new Route(
+    '/admin/forgot-password',
+    ['_script' => __DIR__ . '/../public/admin_forgot_password.php'],
+    [],
+    [],
+    '',
+    [],
+    ['POST']
+));
+$routes->add('admin/reset_password', new Route(
+    '/admin/reset-password',
+    ['_script' => __DIR__ . '/../public/admin_reset_password.php'],
+    [],
+    [],
+    '',
+    [],
+    ['GET', 'POST']
+));
 $routes->add('process_register', new Route(
     '/process-register',
     ['_script' => __DIR__ . '/../public/process_register.php'],
@@ -249,6 +267,24 @@ $routes->add('students/process-register', new Route(
 $routes->add('students/login', new Route(
     '/students/login',
     ['_script' => __DIR__ . '/../public/students/login.php'],
+    [],
+    [],
+    '',
+    [],
+    ['GET', 'POST']
+));
+$routes->add('students/forgot_password', new Route(
+    '/students/forgot-password',
+    ['_script' => __DIR__ . '/../public/students_forgot_password.php'],
+    [],
+    [],
+    '',
+    [],
+    ['POST']
+));
+$routes->add('students/reset_password', new Route(
+    '/students/reset-password',
+    ['_script' => __DIR__ . '/../public/students_reset_password.php'],
     [],
     [],
     '',
