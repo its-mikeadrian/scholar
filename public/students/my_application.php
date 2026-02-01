@@ -21,6 +21,15 @@ if ($user_id) {
         if ($application) {
             $application_status = $application['status'];
         }
+
+        // Determine initial tracker step based on application status
+        $initial_step = 2; // default: Under Review
+        if ($application) {
+            $status_lc = strtolower($application['status'] ?? '');
+            if (in_array($status_lc, ['accepted', 'approved', 'rejected', 'incomplete'])) {
+                $initial_step = 3; // Result
+            }
+        }
     } catch (Exception $e) {
         error_log('Error fetching application: ' . $e->getMessage());
     }
@@ -728,6 +737,10 @@ function format_date($date_string) {
                                         <div class="value" style="text-transform: capitalize; color: <?php echo $application['status'] === 'approved' ? '#2e7d32' : ($application['status'] === 'rejected' ? '#d32f2f' : '#ff9800'); ?>;">
                                             <strong><?php echo htmlspecialchars($application['status'] ?? 'N/A'); ?></strong>
                                         </div>
+                                        <?php if (!empty($application['rejection_reason'])): ?>
+                                        <label class="muted">Reason for Rejection:</label>
+                                        <div class="value" style="color: #d32f2f; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($application['rejection_reason'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
@@ -761,6 +774,7 @@ function format_date($date_string) {
                                         ?>
                                     </div>
                                 </div>
+
                                 <?php else: ?>
                                 <div style="text-align: center; padding: 40px; color: #999;">
                                     <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
@@ -859,7 +873,7 @@ function format_date($date_string) {
         }
 
         // Application tracker step click
-        let currentStep = 2; // Start at step 2 (Under Review)
+        let currentStep = <?php echo (int)$initial_step; ?>; // Start step derived from application status
 
         // Function to set a specific step
         function setStep(stepNumber) {
