@@ -69,61 +69,6 @@ try {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <style>
-        /* Custom styles for calendar */
-        .flatpickr-calendar {
-            width: 100% !important;
-            max-width: 100% !important;
-            transform: scale(1) !important;
-            padding: 8px !important;
-        }
-        .flatpickr-innerContainer {
-            width: 100% !important;
-        }
-        .flatpickr-days {
-            width: 100% !important;
-        }
-        .dayContainer {
-            width: 100% !important;
-            min-width: 100% !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-        }
-        .flatpickr-day {
-            height: 38px !important;
-            line-height: 38px !important;
-            font-size: 14px !important;
-            width: calc(100% / 7) !important;
-            max-width: calc(100% / 7) !important;
-            flex: 0 0 calc(100% / 7) !important;
-        }
-        .flatpickr-weekday {
-            font-size: 13px !important;
-            font-weight: 600 !important;
-            width: calc(100% / 7) !important;
-            flex: 0 0 calc(100% / 7) !important;
-        }
-        .flatpickr-current-month {
-            font-size: 16px !important;
-            padding-bottom: 6px !important;
-        }
-        .flatpickr-month {
-            height: 45px !important;
-        }
-        .flatpickr-weekdays {
-            width: 100% !important;
-        }
-        .flatpickr-weekdaycontainer {
-            display: flex !important;
-            width: 100% !important;
-        }
-        .flatpickr-rContainer {
-            width: 100% !important;
-        }
-        .flatpickr-weekwrapper {
-            display: none !important;
-        }
-    </style>
 </head>
 
 <body class="min-h-screen bg-[#f0f7ff]">
@@ -131,6 +76,60 @@ try {
     <?php require __DIR__ . '/sidebar.php'; ?>
     <div class="pt-14 lg:pl-16" id="appMain">
         <main id="app-content" class="max-w-6xl mx-auto px-4 py-6">
+            <style data-page-style="true">
+                .flatpickr-calendar {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    transform: scale(1) !important;
+                    padding: 8px !important;
+                }
+                .flatpickr-innerContainer {
+                    width: 100% !important;
+                }
+                .flatpickr-days {
+                    width: 100% !important;
+                }
+                .dayContainer {
+                    width: 100% !important;
+                    min-width: 100% !important;
+                    max-width: 100% !important;
+                    padding: 0 !important;
+                }
+                .flatpickr-day {
+                    height: 38px !important;
+                    line-height: 38px !important;
+                    font-size: 14px !important;
+                    width: calc(100% / 7) !important;
+                    max-width: calc(100% / 7) !important;
+                    flex: 0 0 calc(100% / 7) !important;
+                }
+                .flatpickr-weekday {
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                    width: calc(100% / 7) !important;
+                    flex: 0 0 calc(100% / 7) !important;
+                }
+                .flatpickr-current-month {
+                    font-size: 16px !important;
+                    padding-bottom: 6px !important;
+                }
+                .flatpickr-month {
+                    height: 45px !important;
+                }
+                .flatpickr-weekdays {
+                    width: 100% !important;
+                }
+                .flatpickr-weekdaycontainer {
+                    display: flex !important;
+                    width: 100% !important;
+                }
+                .flatpickr-rContainer {
+                    width: 100% !important;
+                }
+                .flatpickr-weekwrapper {
+                    display: none !important;
+                }
+            </style>
             <!-- Date Filter Calendar & Statistics -->
             <div class="mb-8 bg-white rounded-2xl p-6 shadow-sm">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Filter by Date</h3>
@@ -264,183 +263,181 @@ try {
                 </div>
                 <div id="loadMoreContainer" class="text-center mt-6"></div>
             </div>
-        </main>
-    </div>
 
-    <!-- Create Announcement Modal -->
-    <div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6">Create Announcement</h3>
-            <form id="announcementForm" class="space-y-4">
-                <?= csrf_input(); ?>
-                
-                <div>
-                    <label for="announcementTitle" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Title
-                    </label>
-                    <input 
-                        type="text" 
-                        id="announcementTitle" 
-                        name="title" 
-                        placeholder="Enter announcement title..." 
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    >
+            <div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6">Create Announcement</h3>
+                    <form id="announcementForm" class="space-y-4">
+                        <?= csrf_input(); ?>
+                        
+                        <div>
+                            <label for="announcementTitle" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Title
+                            </label>
+                            <input 
+                                type="text" 
+                                id="announcementTitle" 
+                                name="title" 
+                                placeholder="Enter announcement title..." 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                        </div>
+
+                        <div>
+                            <label for="announcementContent" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Message
+                            </label>
+                            <textarea 
+                                id="announcementContent" 
+                                name="content" 
+                                placeholder="Write your announcement message..." 
+                                rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                required
+                            ></textarea>
+                        </div>
+
+                        <div>
+                            <label for="announcementImage" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Image (Optional)
+                            </label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition"
+                                 id="imageDropZone">
+                                <input 
+                                    type="file" 
+                                    id="announcementImage" 
+                                    name="image" 
+                                    accept="image/*"
+                                    class="hidden"
+                                >
+                                <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                <p class="text-gray-600">Click or drag image here (Max 5MB)</p>
+                                <p class="text-sm text-gray-400 mt-1">PNG, JPG, GIF, WebP supported</p>
+                            </div>
+                        </div>
+
+                        <div id="messageContainer"></div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button 
+                                type="submit" 
+                                id="postBtn"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex-1"
+                            >
+                                Post Announcement
+                            </button>
+                            <button 
+                                type="button"
+                                onclick="closeCreateModal()"
+                                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
-                <div>
-                    <label for="announcementContent" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Message
-                    </label>
-                    <textarea 
-                        id="announcementContent" 
-                        name="content" 
-                        placeholder="Write your announcement message..." 
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        required
-                    ></textarea>
-                </div>
-
-                <div>
-                    <label for="announcementImage" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Image (Optional)
-                    </label>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition"
-                         id="imageDropZone">
-                        <input 
-                            type="file" 
-                            id="announcementImage" 
-                            name="image" 
-                            accept="image/*"
-                            class="hidden"
+            <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Delete Announcement?</h3>
+                    <p class="text-gray-600 mb-6">Are you sure you want to delete this announcement? This action cannot be undone.</p>
+                    <div class="flex gap-3">
+                        <button 
+                            type="button"
+                            id="confirmDeleteBtn"
+                            class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex-1"
                         >
-                        <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        <p class="text-gray-600">Click or drag image here (Max 5MB)</p>
-                        <p class="text-sm text-gray-400 mt-1">PNG, JPG, GIF, WebP supported</p>
+                            Delete
+                        </button>
+                        <button 
+                            type="button"
+                            onclick="closeDeleteModal()"
+                            class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
+                        >
+                            Cancel
+                        </button>
                     </div>
                 </div>
-
-                <div id="messageContainer"></div>
-
-                <div class="flex gap-3 pt-4">
-                    <button 
-                        type="submit" 
-                        id="postBtn"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex-1"
-                    >
-                        Post Announcement
-                    </button>
-                    <button 
-                        type="button"
-                        onclick="closeCreateModal()"
-                        class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Delete Announcement?</h3>
-            <p class="text-gray-600 mb-6">Are you sure you want to delete this announcement? This action cannot be undone.</p>
-            <div class="flex gap-3">
-                <button 
-                    type="button"
-                    id="confirmDeleteBtn"
-                    class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold flex-1"
-                >
-                    Delete
-                </button>
-                <button 
-                    type="button"
-                    onclick="closeDeleteModal()"
-                    class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
-                >
-                    Cancel
-                </button>
             </div>
-        </div>
-    </div>
 
-    <!-- Edit Announcement Modal -->
-    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Announcement</h3>
-            <form id="editForm" class="space-y-4">
-                <input type="hidden" id="editAnnouncementId" name="id">
-                
-                <div>
-                    <label for="editTitle" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Title
-                    </label>
-                    <input 
-                        type="text" 
-                        id="editTitle" 
-                        name="title" 
-                        placeholder="Announcement title..." 
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    >
+            <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Announcement</h3>
+                    <form id="editForm" class="space-y-4">
+                        <input type="hidden" id="editAnnouncementId" name="id">
+                        
+                        <div>
+                            <label for="editTitle" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Title
+                            </label>
+                            <input 
+                                type="text" 
+                                id="editTitle" 
+                                name="title" 
+                                placeholder="Announcement title..." 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                        </div>
+
+                        <div>
+                            <label for="editContent" class="block text-sm font-semibold text-gray-700 mb-2">
+                                Message
+                            </label>
+                            <textarea 
+                                id="editContent" 
+                                name="content" 
+                                placeholder="Announcement message..." 
+                                rows="4"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                required
+                            ></textarea>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button 
+                                type="submit" 
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex-1"
+                            >
+                                Save Changes
+                            </button>
+                            <button 
+                                type="button"
+                                onclick="closeEditModal()"
+                                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
-                <div>
-                    <label for="editContent" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Message
-                    </label>
-                    <textarea 
-                        id="editContent" 
-                        name="content" 
-                        placeholder="Announcement message..." 
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                        required
-                    ></textarea>
-                </div>
+            <script data-page-script="true">
+        var csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+        var announcementForm = document.getElementById('announcementForm');
+        var titleInput = document.getElementById('announcementTitle');
+        var contentInput = document.getElementById('announcementContent');
+        var imageInput = document.getElementById('announcementImage');
+        var imageDropZone = document.getElementById('imageDropZone');
+        var postBtn = document.getElementById('postBtn');
+        var messageContainer = document.getElementById('messageContainer');
+        var announcementsFeed = document.getElementById('announcementsFeed');
+        var loadMoreContainer = document.getElementById('loadMoreContainer');
 
-                <div class="flex gap-3 pt-4">
-                    <button 
-                        type="submit" 
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold flex-1"
-                    >
-                        Save Changes
-                    </button>
-                    <button 
-                        type="button"
-                        onclick="closeEditModal()"
-                        class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold flex-1"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-        const announcementForm = document.getElementById('announcementForm');
-        const titleInput = document.getElementById('announcementTitle');
-        const contentInput = document.getElementById('announcementContent');
-        const imageInput = document.getElementById('announcementImage');
-        const imageDropZone = document.getElementById('imageDropZone');
-        const postBtn = document.getElementById('postBtn');
-        const messageContainer = document.getElementById('messageContainer');
-        const announcementsFeed = document.getElementById('announcementsFeed');
-        const loadMoreContainer = document.getElementById('loadMoreContainer');
-
-        let selectedImage = null;
-        let currentPage = 1;
-        let pendingDeleteId = null;
+        var selectedImage = null;
+        var currentPage = 1;
+        var pendingDeleteId = null;
 
         // Store all announcements data
-        const allAnnouncements = <?php echo json_encode($announcements); ?>;
+        var allAnnouncements = <?php echo json_encode($announcements); ?>;
+        var flatpickrCssHref = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css';
+        var flatpickrJsSrc = 'https://cdn.jsdelivr.net/npm/flatpickr';
+        var flatpickrInitDone = false;
 
         // Per-page appOnReady (moved from header) so SPA-injected pages can initialize page-specific code
         window.appOnReady = function(fn) {
@@ -458,11 +455,41 @@ try {
             }
         };
 
+        function ensureFlatpickrAssets(cb) {
+            let called = false;
+            const done = function() {
+                if (called) return;
+                called = true;
+                cb();
+            };
+            if (!document.querySelector(`link[href="${flatpickrCssHref}"]`)) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = flatpickrCssHref;
+                document.head.appendChild(link);
+            }
+            if (typeof flatpickr === 'function') {
+                done();
+                return;
+            }
+            let script = document.querySelector(`script[src="${flatpickrJsSrc}"]`);
+            if (!script) {
+                script = document.createElement('script');
+                script.src = flatpickrJsSrc;
+                script.onload = done;
+                document.body.appendChild(script);
+            } else {
+                script.addEventListener('load', done);
+            }
+            setTimeout(done, 2000);
+        }
+
         // Initialize Flatpickr calendar (use appOnReady so SPA-injected pages initialize)
         window.appOnReady(function() {
             var initFlatpickr = function() {
                 try {
                     if (typeof flatpickr !== 'function') return false;
+                    if (flatpickrInitDone) return true;
                     var calendar = flatpickr('#dateFilter', {
                         mode: 'single',
                         dateFormat: 'Y-m-d',
@@ -507,13 +534,19 @@ try {
                 }
             };
 
-            if (!initFlatpickr()) {
+            ensureFlatpickrAssets(function() {
+                if (flatpickrInitDone) return;
                 var attempts = 0;
                 var t = setInterval(function() {
                     attempts++;
-                    if (initFlatpickr() || attempts > 20) clearInterval(t);
+                    if (initFlatpickr()) {
+                        flatpickrInitDone = true;
+                        clearInterval(t);
+                    } else if (attempts > 20) {
+                        clearInterval(t);
+                    }
                 }, 150);
-            }
+            });
         });
 
         // Image upload handling
@@ -848,7 +881,9 @@ try {
         function escapeForJS(text) {
             return text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
         }
-    </script>
+            </script>
+        </main>
+    </div>
 </body>
 
 </html>
