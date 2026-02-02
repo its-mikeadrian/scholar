@@ -366,6 +366,15 @@ $routes->add('students/application', new Route(
     [],
     ['GET']
 ));
+$routes->add('students/my_application', new Route(
+    '/students/my-application',
+    ['_script' => __DIR__ . '/../public/students/my_application.php'],
+    [],
+    [],
+    '',
+    [],
+    ['GET']
+));
 $routes->add('students/process-application', new Route(
     '/students/process-application',
     ['_script' => __DIR__ . '/../public/students/process_application.php'],

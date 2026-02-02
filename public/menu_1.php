@@ -8,6 +8,41 @@ if (!isset($_SESSION['auth_user_id'])) {
     header('Location: ' . route_url('admin'));
     exit;
 }
+// Load metrics from database
+require_once __DIR__ . '/../src/db.php';
+$totalApps = 0;
+$accepted = 0;
+$forReview = 0;
+$paid = 0;
+$unpaid = 0;
+$y1 = $y2 = $y3 = $y4 = 0;
+try {
+    $pdo = get_db_connection();
+    $totalApps = (int) $pdo->query("SELECT COUNT(*) FROM scholarship_applications")->fetchColumn();
+    $accepted = (int) $pdo->query("SELECT COUNT(*) FROM scholarship_applications WHERE status = 'approved'")->fetchColumn();
+    $forReview = (int) $pdo->query("SELECT COUNT(*) FROM scholarship_applications WHERE status = 'pending'")->fetchColumn();
+    // paid field is not present in DB; default to 0 and treat unpaid = approved
+    $paid = 0;
+    $unpaid = max(0, $accepted - $paid);
+    $levels = $pdo->query("SELECT academic_level, COUNT(*) AS c FROM scholarship_applications GROUP BY academic_level")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($levels as $lv) {
+        $lvl = trim((string)($lv['academic_level'] ?? ''));
+        $count = (int)($lv['c'] ?? 0);
+        if (stripos($lvl, '1') !== false) $y1 = $count;
+        else if (stripos($lvl, '2') !== false) $y2 = $count;
+        else if (stripos($lvl, '3') !== false) $y3 = $count;
+        else if (stripos($lvl, '4') !== false) $y4 = $count;
+    }
+} catch (Exception $e) {
+    error_log('Error loading dashboard metrics: ' . $e->getMessage());
+}
+
+// compute bar widths
+$maxY = max(1, $y1, $y2, $y3, $y4);
+$w1 = ($y1 * 100) / $maxY;
+$w2 = ($y2 * 100) / $maxY;
+$w3 = ($y3 * 100) / $maxY;
+$w4 = ($y4 * 100) / $maxY;
 
 $announcement_stats = ['total' => 0, 'this_month' => 0, 'this_week' => 0, 'today' => 0];
 try {
@@ -55,6 +90,16 @@ try {
                     <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                         <div class="flex items-center justify-between gap-3">
                             <div>
+                                <div class="text-xs text-[#293D82]">Applications</div>
+                                <div id="metricTotalApps" class="mt-1 text-2xl font-semibold text-[#212121]"><?php echo htmlspecialchars((string)$totalApps, ENT_QUOTES, 'UTF-8'); ?></div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                                    <path d="M8 7h8" />
+                                    <path d="M8 11h8" />
+                                    <path d="M8 15h5" />
+                                </svg>
                                 <div class="text-xs text-gray-600 font-medium">Applications</div>
                                 <div id="metricTotalApps" class="text-2xl font-bold text-blue-600 mt-0">0</div>
                             </div>
@@ -69,6 +114,13 @@ try {
                     <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
                         <div class="flex items-center justify-between gap-3">
                             <div>
+                                <div class="text-xs text-[#293D82]">Accepted</div>
+                                <div id="metricAccepted" class="mt-1 text-2xl font-semibold text-[#212121]"><?php echo htmlspecialchars((string)$accepted, ENT_QUOTES, 'UTF-8'); ?></div>
+                            </div>
+                            <div class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#e3f2fd] text-[#1e88e5]">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
                                 <div class="text-xs text-gray-600 font-medium">Accepted</div>
                                 <div id="metricAccepted" class="text-2xl font-bold text-green-600 mt-0">0</div>
                             </div>
@@ -80,6 +132,8 @@ try {
                     <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
                         <div class="flex items-center justify-between gap-3">
                             <div>
+                                <div class="text-xs text-[#293D82]">For Review</div>
+                                <div id="metricForReview" class="mt-1 text-2xl font-semibold text-[#212121]"><?php echo htmlspecialchars((string)$forReview, ENT_QUOTES, 'UTF-8'); ?></div>
                                 <div class="text-xs text-gray-600 font-medium">For Review</div>
                                 <div id="metricForReview" class="text-2xl font-bold text-purple-600 mt-0">0</div>
                             </div>
@@ -105,6 +159,8 @@ try {
                     <div class="bg-gradient-to-br from-rose-50 to-rose-100 rounded-lg p-3 border border-rose-200">
                         <div class="flex items-center justify-between gap-3">
                             <div>
+                                <div class="text-xs text-[#293D82]">Paid</div>
+                                <div id="metricPaid" class="mt-1 text-2xl font-semibold text-[#212121]"><?php echo htmlspecialchars((string)$paid, ENT_QUOTES, 'UTF-8'); ?></div>
                                 <div class="text-xs text-gray-600 font-medium">Unpaid</div>
                                 <div id="metricUnpaid" class="text-2xl font-bold text-rose-600 mt-0">0</div>
                             </div>
@@ -140,6 +196,8 @@ try {
                     <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
                         <div class="flex items-center justify-between">
                             <div>
+                                <div class="text-xs text-[#293D82]">Unpaid</div>
+                                <div id="metricUnpaid" class="mt-1 text-2xl font-semibold text-[#212121]"><?php echo htmlspecialchars((string)$unpaid, ENT_QUOTES, 'UTF-8'); ?></div>
                                 <p class="text-xs text-gray-600 font-medium">This Month</p>
                                 <p class="text-2xl font-bold text-green-600 mt-0"><?php echo $announcement_stats['this_month']; ?></p>
                             </div>
@@ -184,94 +242,36 @@ try {
                     <div class="flex items-center gap-3">
                         <div class="w-24 text-xs text-[#293D82]">1st Year</div>
                         <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                            <div id="barY1" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                            <div id="barY1" class="h-3 rounded-full bg-[#1e88e5]" style="width:<?php echo htmlspecialchars((string)$w1, ENT_QUOTES, 'UTF-8'); ?>%"></div>
                         </div>
-                        <div id="valY1" class="w-10 text-xs text-right text-[#212121]">0</div>
+                        <div id="valY1" class="w-10 text-xs text-right text-[#212121]"><?php echo htmlspecialchars((string)$y1, ENT_QUOTES, 'UTF-8'); ?></div>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="w-24 text-xs text-[#293D82]">2nd Year</div>
                         <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                            <div id="barY2" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                            <div id="barY2" class="h-3 rounded-full bg-[#1e88e5]" style="width:<?php echo htmlspecialchars((string)$w2, ENT_QUOTES, 'UTF-8'); ?>%"></div>
                         </div>
-                        <div id="valY2" class="w-10 text-xs text-right text-[#212121]">0</div>
+                        <div id="valY2" class="w-10 text-xs text-right text-[#212121]"><?php echo htmlspecialchars((string)$y2, ENT_QUOTES, 'UTF-8'); ?></div>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="w-24 text-xs text-[#293D82]">3rd Year</div>
                         <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                            <div id="barY3" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                            <div id="barY3" class="h-3 rounded-full bg-[#1e88e5]" style="width:<?php echo htmlspecialchars((string)$w3, ENT_QUOTES, 'UTF-8'); ?>%"></div>
                         </div>
-                        <div id="valY3" class="w-10 text-xs text-right text-[#212121]">0</div>
+                        <div id="valY3" class="w-10 text-xs text-right text-[#212121]"><?php echo htmlspecialchars((string)$y3, ENT_QUOTES, 'UTF-8'); ?></div>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="w-24 text-xs text-[#293D82]">4th Year</div>
                         <div class="flex-1 h-3 rounded-full bg-[#e3f2fd]">
-                            <div id="barY4" class="h-3 rounded-full bg-[#1e88e5]" style="width:0%"></div>
+                            <div id="barY4" class="h-3 rounded-full bg-[#1e88e5]" style="width:<?php echo htmlspecialchars((string)$w4, ENT_QUOTES, 'UTF-8'); ?>%"></div>
                         </div>
-                        <div id="valY4" class="w-10 text-xs text-right text-[#212121]">0</div>
+                        <div id="valY4" class="w-10 text-xs text-right text-[#212121]"><?php echo htmlspecialchars((string)$y4, ENT_QUOTES, 'UTF-8'); ?></div>
                     </div>
                 </div>
             </div>
 
             <script data-page-script="true">
-                (function() {
-                    function text(id, v) {
-                        var el = document.getElementById(id);
-                        if (el) el.textContent = String(v);
-                    }
-
-                    function setWidth(id, pct) {
-                        var el = document.getElementById(id);
-                        if (el) el.style.width = String(Math.max(0, Math.min(100, pct))) + '%';
-                    }
-
-                    function setVal(id, v) {
-                        var el = document.getElementById(id);
-                        if (el) el.textContent = String(v);
-                    }
-
-                    function render() {
-                        var apps = (window.AppData && Array.isArray(window.AppData.applications)) ? window.AppData.applications : [];
-                        var checklist = (window.AppData && Array.isArray(window.AppData.checklist)) ? window.AppData.checklist : [];
-                        var totalApps = apps.length;
-                        var accepted = apps.filter(function(a) {
-                            return a.status === 'Accepted';
-                        }).length;
-                        var forReview = apps.filter(function(a) {
-                            return a.status === 'For Review';
-                        }).length;
-                        var paid = checklist.filter(function(i) {
-                            return !!i.paid;
-                        }).length;
-                        var unpaid = checklist.length - paid;
-                        text('metricTotalApps', totalApps);
-                        text('metricAccepted', accepted);
-                        text('metricForReview', forReview);
-                        text('metricPaid', paid);
-                        text('metricUnpaid', unpaid);
-                        var y1 = apps.filter(function(a) {
-                            return a.yearLevel === '1st Year';
-                        }).length;
-                        var y2 = apps.filter(function(a) {
-                            return a.yearLevel === '2nd Year';
-                        }).length;
-                        var y3 = apps.filter(function(a) {
-                            return a.yearLevel === '3rd Year';
-                        }).length;
-                        var y4 = apps.filter(function(a) {
-                            return a.yearLevel === '4th Year';
-                        }).length;
-                        var maxY = Math.max(1, y1, y2, y3, y4);
-                        setWidth('barY1', y1 * 100 / maxY);
-                        setVal('valY1', y1);
-                        setWidth('barY2', y2 * 100 / maxY);
-                        setVal('valY2', y2);
-                        setWidth('barY3', y3 * 100 / maxY);
-                        setVal('valY3', y3);
-                        setWidth('barY4', y4 * 100 / maxY);
-                        setVal('valY4', y4);
-                    }
-                    render();
-                })();
+                (function(){ /* metrics are rendered server-side */ })();
             </script>
         </main>
     </div>

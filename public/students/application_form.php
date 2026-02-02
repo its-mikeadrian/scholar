@@ -5,6 +5,25 @@ secure_session_start();
 require_once __DIR__ . '/../../src/db.php';
 
 enforce_student_profile_completed($conn);
+
+// Check if user already has an existing application
+$user_id = auth_user_id();
+if ($user_id) {
+    try {
+        $pdo = get_db_connection();
+        $stmt = $pdo->prepare("SELECT id FROM scholarship_applications WHERE user_id = ? LIMIT 1");
+        $stmt->execute([$user_id]);
+        $existing_application = $stmt->fetch();
+        
+        if ($existing_application) {
+            // User already has an application, redirect to my_application
+            header('Location: ' . route_url('students/my_application'));
+            exit;
+        }
+    } catch (Exception $e) {
+        error_log('Error checking existing application: ' . $e->getMessage());
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -236,6 +255,32 @@ enforce_student_profile_completed($conn);
             border-radius: 8px;
             border: 1px solid #ccc;
             box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .scholarship-form-select.error,
+        .scholarship-form-input.error {
+            border-color: #f44336;
+            background-color: #ffebee;
+            box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+        }
+
+        .scholarship-form-select.error:focus,
+        .scholarship-form-input.error:focus {
+            outline: none;
+            border-color: #f44336;
+            box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
+        }
+
+        .error-message {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
         }
 
         .scholarship-form-radio-group {
@@ -460,37 +505,38 @@ enforce_student_profile_completed($conn);
                     <div class="scholarship-form-grid">
                         <div>
                             <label class="scholarship-form-label">Academic Level</label>
-                            <select class="scholarship-form-select">
-                                <option>1st Year</option>
-                                <option>2nd Year</option>
-                                <option>3rd Year</option>
-                                <option>4th Year</option>
+                            <select name="academic_level" class="scholarship-form-select" required>
+                                <option value="">-- Select Academic Level --</option>
+                                <option value="1st Year">1st Year</option>
+                                <option value="2nd Year">2nd Year</option>
+                                <option value="3rd Year">3rd Year</option>
+                                <option value="4th Year">4th Year</option>
                             </select>
                         </div>
                         <div>
                             <label class="scholarship-form-label">Semester</label>
-                            <input type="text" placeholder="Semester" class="scholarship-form-input" />
+                            <input type="text" name="semester" placeholder="Semester" class="scholarship-form-input" required />
                         </div>
-                        <input type="text" placeholder="First Name" class="scholarship-form-input" />
-                        <input type="text" placeholder="Last Name" class="scholarship-form-input" />
-                        <input type="text" placeholder="Middle Name" class="scholarship-form-input" />
-                        <input type="date" placeholder="dd/mm/yyyy" class="scholarship-form-input" />
-                        <input type="text" placeholder="Age" class="scholarship-form-input" />
-                        <input type="text" placeholder="Cellphone Number" class="scholarship-form-input" />
+                        <input type="text" name="first_name" placeholder="First Name" class="scholarship-form-input" required />
+                        <input type="text" name="last_name" placeholder="Last Name" class="scholarship-form-input" required />
+                        <input type="text" name="middle_name" placeholder="Middle Name" class="scholarship-form-input" required />
+                        <input type="date" name="date_of_birth" placeholder="dd/mm/yyyy" class="scholarship-form-input" required />
+                        <input type="text" name="age" placeholder="Age" class="scholarship-form-input" required />
+                        <input type="text" name="cellphone_number" placeholder="Cellphone Number" class="scholarship-form-input" required />
                         <div class="scholarship-form-radio-group">
                             <label class="scholarship-form-label">Sex</label>
                             <input type="radio" id="male" name="sex" value="Male" class="scholarship-form-radio" /> <label for="male" class="scholarship-form-radio-label">Male</label>
                             <input type="radio" id="female" name="sex" value="Female" class="scholarship-form-radio" /> <label for="female" class="scholarship-form-radio-label">Female</label>
                         </div>
-                        <input type="text" placeholder="Mother's Maiden Name" class="scholarship-form-input" />
-                        <input type="text" placeholder="Occupation" class="scholarship-form-input" />
-                        <input type="text" placeholder="Father's Name" class="scholarship-form-input" />
-                        <input type="text" placeholder="Occupation" class="scholarship-form-input" />
-                        <input type="text" placeholder="Street Address" class="scholarship-form-input" />
-                        <input type="text" placeholder="House no./Bldg no." class="scholarship-form-input" />
+                        <input type="text" name="mothers_maiden_name" placeholder="Mother's Maiden Name" class="scholarship-form-input" required />
+                        <input type="text" name="mothers_occupation" placeholder="Occupation" class="scholarship-form-input" required />
+                        <input type="text" name="fathers_name" placeholder="Father's Name" class="scholarship-form-input" required />
+                        <input type="text" name="fathers_occupation" placeholder="Occupation" class="scholarship-form-input" required />
+                        <input type="text" name="street_address" placeholder="Street Address" class="scholarship-form-input" required />
+                        <input type="text" name="house_number" placeholder="House no./Bldg no." class="scholarship-form-input" required />
                         <div>
                             <label class="scholarship-form-label">Barangay</label>
-                            <select class="scholarship-form-select">
+                            <select name="barangay" class="scholarship-form-select" required>
                                 <option value="">-- Select Barangay --</option>
                                 <option>San Agustin</option>
                                 <option>San Carlos</option>
@@ -513,7 +559,7 @@ enforce_student_profile_completed($conn);
                         </div>
                         <div>
                             <label class="scholarship-form-label">Municipality</label>
-                            <input type="text" class="scholarship-form-input" value="San Luis" readonly />
+                            <input type="text" name="municipality" class="scholarship-form-input" value="San Luis" readonly />
                         </div>
                         
                     </div>
@@ -534,7 +580,7 @@ enforce_student_profile_completed($conn);
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" accept="image/*,.pdf">
+                                        <input type="file" name="cor_coe_file" accept="image/*,.pdf" required>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -547,7 +593,7 @@ enforce_student_profile_completed($conn);
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" accept="image/*,.pdf">
+                                        <input type="file" name="cert_grades_file" accept="image/*,.pdf" required>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -560,7 +606,7 @@ enforce_student_profile_completed($conn);
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" accept="image/*,.pdf">
+                                        <input type="file" name="barangay_indigency_file" accept="image/*,.pdf" required>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -573,7 +619,7 @@ enforce_student_profile_completed($conn);
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" accept="image/*,.pdf">
+                                        <input type="file" name="voters_cert_file" accept="image/*,.pdf" required>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -585,7 +631,7 @@ enforce_student_profile_completed($conn);
                     </div>
                     <div class="scholarship-form-submit" style="margin-top: 32px; display: flex; gap: 12px; justify-content: center;">
                         <button type="button" class="scholarship-form-btn" id="prevBtn" style="background: #888;">Previous</button>
-                        <button type="button" class="scholarship-form-btn" id="continueBtn" style="background: #ff3fa4;">Continue</button>
+                        <button type="submit" class="scholarship-form-btn" id="continueBtn" style="background: #ff3fa4;">Submit Application</button>
                     </div>
                 </div>
             </form>
@@ -629,9 +675,55 @@ enforce_student_profile_completed($conn);
 
             if(nextBtn) {
                 nextBtn.addEventListener('click', function() {
+                    // Validate page 1 form
+                    const form = document.querySelector('.scholarship-form-form');
+                    let isValid = true;
+                    
+                    // Clear previous error states
+                    const allInputs = form.querySelectorAll('input[type="text"], input[type="date"], select');
+                    allInputs.forEach(input => {
+                        input.classList.remove('error');
+                    });
+                    
+                    // Check required fields and add error class
+                    allInputs.forEach(input => {
+                        if (!input.value.trim()) {
+                            input.classList.add('error');
+                            isValid = false;
+                        }
+                    });
+                    
+                    if (!isValid) {
+                        alert('Please fill in all required fields.');
+                        return;
+                    }
+                    
+                    // Check if sex is selected
+                    const sexRadios = document.querySelectorAll('input[name="sex"]');
+                    const sexSelected = Array.from(sexRadios).some(radio => radio.checked);
+                    if (!sexSelected) {
+                        alert('Please select your sex.');
+                        return;
+                    }
+                    
                     showPage2();
                 });
             }
+
+            // Add event listeners to remove error class when user starts typing
+            const allInputFields = document.querySelectorAll('.scholarship-form-input, .scholarship-form-select');
+            allInputFields.forEach(field => {
+                field.addEventListener('input', function() {
+                    if (this.value.trim()) {
+                        this.classList.remove('error');
+                    }
+                });
+                field.addEventListener('change', function() {
+                    if (this.value.trim()) {
+                        this.classList.remove('error');
+                    }
+                });
+            });
 
             if(acknowledgeCriteria) {
                 acknowledgeCriteria.addEventListener('click', function() {
@@ -685,11 +777,30 @@ enforce_student_profile_completed($conn);
                 }
             });
 
-            // Continue button confirmation
+            // Continue button - submit form
             const continueBtn = document.getElementById('continueBtn');
-            if(continueBtn) {
+            const form = document.querySelector('.scholarship-form-form');
+            if(continueBtn && form) {
                 continueBtn.addEventListener('click', function(e) {
                     e.preventDefault();
+                    
+                    // Validate all required files are uploaded
+                    const requiredFiles = ['cor_coe_file', 'cert_grades_file', 'barangay_indigency_file', 'voters_cert_file'];
+                    let allFilesUploaded = true;
+                    
+                    requiredFiles.forEach(fieldName => {
+                        const fileInput = form.querySelector(`input[name="${fieldName}"]`);
+                        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                            allFilesUploaded = false;
+                        }
+                    });
+                    
+                    if (!allFilesUploaded) {
+                        alert('Please upload all required documents before submitting.');
+                        return;
+                    }
+                    
+                    // Show confirmation before submit
                     const confirmModal = document.getElementById('confirmModal');
                     if(confirmModal) {
                         confirmModal.classList.add('active');
@@ -728,22 +839,23 @@ enforce_student_profile_completed($conn);
 <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div id="confirmOverlay" class="modal-overlay"></div>
     <div class="modal-content" style="max-width: 520px; font-size: 14px;">
-        <h2 id="confirmTitle" style="margin: 0 0 12px; font-size: 24px;">Proceed to My Application?</h2>
-        <p style="color:#555; margin-bottom: 18px;">Are you sure you want to continue to your application overview page?</p>
+        <h2 id="confirmTitle" style="margin: 0 0 12px; font-size: 24px;">Submit Application?</h2>
+        <p style="color:#555; margin-bottom: 18px;">Are you sure you want to submit your scholarship application? Please review your information before submitting.</p>
         <div style="display:flex; gap: 12px; justify-content: flex-end;">
             <button type="button" class="close-btn" id="cancelConfirm">Cancel</button>
-            <button type="button" class="apply-btn" id="proceedConfirm" style="background:#293D82; color:#fff;">Proceed</button>
+            <button type="button" class="apply-btn" id="proceedConfirm" style="background:#293D82; color:#fff;">Submit</button>
         </div>
     </div>
 </div>
 
 <script>
-// Confirmation modal behavior for Continue button
+// Confirmation modal behavior for submission
 (function() {
     const confirmModal = document.getElementById('confirmModal');
     const cancelConfirmBtn = document.getElementById('cancelConfirm');
     const proceedConfirmBtn = document.getElementById('proceedConfirm');
     const confirmOverlay = document.getElementById('confirmOverlay');
+    const form = document.querySelector('.scholarship-form-form');
 
     function closeConfirmModal(){
         if(confirmModal){
@@ -762,10 +874,10 @@ enforce_student_profile_completed($conn);
             closeConfirmModal();
         });
     }
-    if(proceedConfirmBtn){
+    if(proceedConfirmBtn && form){
         proceedConfirmBtn.addEventListener('click', function(){
             closeConfirmModal();
-            window.location.href = 'my_application.php';
+            form.submit();
         });
     }
     document.addEventListener('keydown', function(e){

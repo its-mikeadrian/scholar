@@ -5,6 +5,42 @@ secure_session_start();
 require_once __DIR__ . '/../../src/db.php';
 
 enforce_student_profile_completed($conn);
+
+// Fetch user's application data
+$user_id = auth_user_id();
+$application = null;
+$application_status = 'pending';
+
+if ($user_id) {
+    try {
+        $pdo = get_db_connection();
+        $stmt = $pdo->prepare("SELECT * FROM scholarship_applications WHERE user_id = ? ORDER BY submission_date DESC LIMIT 1");
+        $stmt->execute([$user_id]);
+        $application = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($application) {
+            $application_status = $application['status'];
+        }
+
+        // Determine initial tracker step based on application status
+        $initial_step = 2; // default: Under Review
+        if ($application) {
+            $status_lc = strtolower($application['status'] ?? '');
+            if (in_array($status_lc, ['accepted', 'approved', 'rejected', 'incomplete'])) {
+                $initial_step = 3; // Result
+            }
+        }
+    } catch (Exception $e) {
+        error_log('Error fetching application: ' . $e->getMessage());
+    }
+}
+
+// Helper function to format date
+function format_date($date_string) {
+    if (empty($date_string)) return 'N/A';
+    $date = new DateTime($date_string);
+    return $date->format('F d, Y');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -377,6 +413,224 @@ enforce_student_profile_completed($conn);
                 font-size: 0.92rem;
             }
         }
+
+        /* Document Modal Styles */
+        .document-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .document-modal.active {
+            display: flex;
+        }
+
+        .document-modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 90%;
+            max-height: 90vh;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .document-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            background: #f9f9f9;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .document-modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .zoom-controls-footer {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+
+        .document-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .document-modal-close:hover {
+            color: #d32f2f;
+            transform: scale(1.2);
+        }
+
+        .document-modal-body {
+            padding: 20px;
+            text-align: center;
+            overflow-y: auto;
+            overflow-x: auto;
+            flex: 1;
+            position: relative;
+        }
+
+        .document-modal-body img {
+            cursor: grab;
+            user-select: none;
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+        
+        .document-modal-body img.zoomed {
+            cursor: grabbing;
+        }
+
+        .document-modal-body img.dragging {
+            cursor: grabbing;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            right: 60px;
+            z-index: 20;
+            display: flex;
+            gap: 8px;
+        }
+
+        .zoom-btn {
+            background: rgba(30, 136, 229, 0.8);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .zoom-btn:hover {
+            background: #1565c0;
+            transform: scale(1.1);
+        }
+
+        .zoom-level {
+            background: transparent;
+            color: #333;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .document-modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            background: transparent;
+            text-align: center;
+            flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .document-modal-download {
+            background: #1e88e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .document-modal-download:hover {
+            background: #1565c0;
+            transform: translateY(-2px);
+        }
+
+        .zoom-controls-footer {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0 0 12px 12px;
+            flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .zoom-btn-footer {
+            background: rgba(30, 136, 229, 0.6);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 18px;
+            backdrop-filter: blur(4px);
+        }
+
+        .zoom-btn-footer:hover {
+            background: rgba(30, 136, 229, 0.8);
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .zoom-level-footer {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+        }
     </style>
 </head>
 
@@ -444,59 +698,101 @@ enforce_student_profile_completed($conn);
                         <div class="tab-panels">
                             <div id="panel-submitted" class="tab-panel active" role="tabpanel" aria-labelledby="tab-submitted">
                                 <h3>Submitted Form</h3>
+                                <?php if ($application): ?>
                                 <div class="form-grid">
                                     <div class="col">
                                         <label class="muted">Academic Level:</label>
-                                        <div class="value">1st Year - 1st Semester</div>
+                                        <div class="value"><?php echo htmlspecialchars($application['academic_level'] ?? 'N/A'); ?> - <?php echo htmlspecialchars($application['semester'] ?? 'N/A'); ?></div>
 
                                         <label class="muted">Name:</label>
-                                        <div class="value"><strong>Dela Cruz, Juan Cruz</strong></div>
+                                        <div class="value"><strong><?php echo htmlspecialchars($application['last_name'] ?? ''); ?>, <?php echo htmlspecialchars($application['first_name'] ?? ''); ?> <?php echo htmlspecialchars($application['middle_name'] ?? ''); ?></strong></div>
 
                                         <label class="muted">Mother's Maiden Name:</label>
-                                        <div class="value">Gina San Juan</div>
+                                        <div class="value"><?php echo htmlspecialchars($application['mothers_maiden_name'] ?? 'N/A'); ?></div>
 
                                         <label class="muted">Father's Name:</label>
-                                        <div class="value">Pedro Dela Cruz</div>
+                                        <div class="value"><?php echo htmlspecialchars($application['fathers_name'] ?? 'N/A'); ?></div>
                                     </div>
                                     <div class="col">
                                         <label class="muted">Age:</label>
-                                        <div class="value">21</div>
+                                        <div class="value"><?php echo htmlspecialchars($application['age'] ?? 'N/A'); ?></div>
 
-                                        <label class="muted">Occupation (Mother):</label>
-                                        <div class="value">Housewife</div>
+                                        <label class="muted">Date of Birth:</label>
+                                        <div class="value"><?php echo format_date($application['date_of_birth'] ?? ''); ?></div>
 
-                                        <label class="muted">Occupation (Father):</label>
-                                        <div class="value">Driver</div>
+                                        <label class="muted">Sex:</label>
+                                        <div class="value"><?php echo htmlspecialchars($application['sex'] ?? 'N/A'); ?></div>
+
+                                        <label class="muted">Cellphone No.:</label>
+                                        <div class="value"><?php echo htmlspecialchars($application['cellphone_number'] ?? 'N/A'); ?></div>
                                     </div>
                                     <div class="col address-col">
                                         <label class="muted">Home Address:</label>
-                                        <div class="value">194 Sto. Nino Street Poblacion Bustos Bulacan</div>
+                                        <div class="value"><?php echo htmlspecialchars($application['house_number'] ?? ''); ?> <?php echo htmlspecialchars($application['street_address'] ?? ''); ?> <?php echo htmlspecialchars($application['barangay'] ?? ''); ?> <?php echo htmlspecialchars($application['municipality'] ?? ''); ?></div>
 
-                                        <label class="muted">Cellphone No.:</label>
-                                        <div class="value">09012345678</div>
+                                        <label class="muted">Submission Date:</label>
+                                        <div class="value"><?php echo format_date($application['submission_date'] ?? ''); ?></div>
+
+                                        <label class="muted">Status:</label>
+                                        <div class="value" style="text-transform: capitalize; color: <?php echo $application['status'] === 'approved' ? '#2e7d32' : ($application['status'] === 'rejected' ? '#d32f2f' : '#ff9800'); ?>;">
+                                            <strong><?php echo htmlspecialchars($application['status'] ?? 'N/A'); ?></strong>
+                                        </div>
+                                        <?php if (!empty($application['rejection_reason'])): ?>
+                                        <label class="muted">Reason for Rejection:</label>
+                                        <div class="value" style="color: #d32f2f; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($application['rejection_reason'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
 
                                 <div style="margin-top:18px;">
                                     <label class="muted">Documents Submitted:</label>
                                     <div class="docs-row">
-                                        <div class="doc-placeholder"></div>
-                                        <div class="doc-placeholder"></div>
-                                        <div class="doc-placeholder"></div>
-                                        <div class="doc-placeholder"></div>
+                                        <?php 
+                                        $documents = [
+                                            ['field' => 'cor_coe_file', 'title' => 'COR/COE', 'name' => 'Certificate of Registration'],
+                                            ['field' => 'cert_grades_file', 'title' => 'Cert of Grades', 'name' => '2nd Semester Grades'],
+                                            ['field' => 'barangay_indigency_file', 'title' => 'Barangay Indigency', 'name' => 'Barangay Indigency'],
+                                            ['field' => 'voters_cert_file', 'title' => 'Voters Cert', 'name' => 'Voters Certification']
+                                        ];
+                                        
+                                        foreach ($documents as $doc) {
+                                            if (!empty($application[$doc['field']])) {
+                                                $file_path = $application[$doc['field']];
+                                                $full_url = '../' . htmlspecialchars($file_path);
+                                                $is_image = preg_match('/\.(jpg|jpeg|png|gif)$/i', $file_path);
+                                                echo '<div class="doc-placeholder" style="display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f0f7ff; border: 2px solid #1e88e5; transition: all 0.3s ease;" onclick="openDocumentModal(\'' . $full_url . '\', \'' . ($is_image ? 'image' : 'pdf') . '\', \'' . htmlspecialchars($doc['name']) . '\')" onmouseover="this.style.background=\'#e3f2fd\'; this.style.boxShadow=\'0 4px 12px rgba(30, 136, 229, 0.3)\';" onmouseout="this.style.background=\'#f0f7ff\'; this.style.boxShadow=\'inset 0 0 0 4px #ddd\'">';
+                                                if ($is_image) {
+                                                    echo '<img src="' . $full_url . '" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" alt="' . htmlspecialchars($doc['name']) . '">';
+                                                } else {
+                                                    echo '<i class="fas fa-file-pdf" style="color: #d32f2f; font-size: 32px;"></i>';
+                                                }
+                                                echo '</div>';
+                                            } else {
+                                                echo '<div class="doc-placeholder" style="background: #f5f5f5; display: flex; align-items: center; justify-content: center;"><span style="color: #999; font-size: 12px; text-align: center;">No file</span></div>';
+                                            }
+                                        }
+                                        ?>
                                     </div>
                                 </div>
 
+                                <?php else: ?>
+                                <div style="text-align: center; padding: 40px; color: #999;">
+                                    <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                    <p>No application submitted yet.</p>
+                                    <a href="<?php echo route_url('students/application'); ?>" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Submit your application</a>
+                                </div>
+                                <?php endif; ?>
 
                             </div>
 
                             <div id="panel-renewal" class="tab-panel" role="tabpanel" aria-labelledby="tab-renewal">
                                 <h3>Renewal Form</h3>
+                                <?php if ($application): ?>
                                 <form id="renewalForm">
                                     <div class="form-grid">
                                         <div class="col">
                                             <label class="muted">Name:</label>
-                                            <div class="value">Dela Cruz, Juan Cruz</div>
+                                            <div class="value"><?php echo htmlspecialchars($application['last_name'] ?? ''); ?>, <?php echo htmlspecialchars($application['first_name'] ?? ''); ?> <?php echo htmlspecialchars($application['middle_name'] ?? ''); ?></div>
 
                                             <label class="muted">Course / Year:</label>
                                             <input type="text" name="course" placeholder="e.g., BS Computer Science - 2nd Year" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;">
@@ -504,14 +800,14 @@ enforce_student_profile_completed($conn);
                                         </div>
                                         <div class="col">
                                             <label class="muted">Contact No.:</label>
-                                            <input type="text" name="contact" placeholder="09012345678" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;">
+                                            <input type="text" name="contact" placeholder="09012345678" value="<?php echo htmlspecialchars($application['cellphone_number'] ?? ''); ?>" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;">
 
                                             <label class="muted">Upload Grades (optional):</label>
                                             <input type="file" name="grades" style="margin-top:6px;">
                                         </div>
                                         <div class="col address-col">
                                             <label class="muted">Home Address:</label>
-                                            <textarea name="address" rows="4" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;">194 Sto. Nino Street Poblacion Bustos Bulacan</textarea>
+                                            <textarea name="address" rows="4" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;"><?php echo htmlspecialchars($application['house_number'] ?? ''); ?> <?php echo htmlspecialchars($application['street_address'] ?? ''); ?> <?php echo htmlspecialchars($application['barangay'] ?? ''); ?> <?php echo htmlspecialchars($application['municipality'] ?? ''); ?></textarea>
                                         </div>
                                     </div>
 
@@ -519,6 +815,13 @@ enforce_student_profile_completed($conn);
                                         <button type="submit" class="apply-btn" style="background:#ff6fb2; color:white;">Submit Renewal</button>
                                     </div>
                                 </form>
+                                <?php else: ?>
+                                <div style="text-align: center; padding: 40px; color: #999;">
+                                    <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                    <p>Renewal form is only available after submitting your initial application.</p>
+                                    <a href="<?php echo route_url('students/application'); ?>" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Submit your application</a>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -570,7 +873,7 @@ enforce_student_profile_completed($conn);
         }
 
         // Application tracker step click
-        let currentStep = 2; // Start at step 2 (Under Review)
+        let currentStep = <?php echo (int)$initial_step; ?>; // Start step derived from application status
 
         // Function to set a specific step
         function setStep(stepNumber) {
@@ -606,7 +909,149 @@ enforce_student_profile_completed($conn);
 
         // Initialize on page load
         updateProgress(currentStep);
+
+        // Zoom functionality
+        let currentZoom = 100;
+        const minZoom = 50;
+        const maxZoom = 300;
+        const zoomStep = 10;
+
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                applyZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                applyZoom();
+            }
+        }
+
+        function applyZoom() {
+            const img = document.querySelector('.document-modal-body img');
+            const zoomLevel = document.getElementById('zoomLevel');
+            if (img) {
+                img.style.transform = `scale(${currentZoom / 100})`;
+            }
+            if (zoomLevel) {
+                zoomLevel.textContent = currentZoom + '%';
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 100;
+            applyZoom();
+        }
+
+        // Make zoom functions globally accessible
+        window.zoomIn = zoomIn;
+        window.zoomOut = zoomOut;
+        window.resetZoom = resetZoom;
+
+        // Image drag functionality
+        let isDragging = false;
+        let startX, startY, translateX = 0, translateY = 0;
+
+        function startDrag(e) {
+            const img = document.querySelector('.document-modal-body img');
+            if (!img) return;
+            isDragging = true;
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            img.style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            const img = document.querySelector('.document-modal-body img');
+            if (!img) return;
+            e.preventDefault();
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom / 100})`;
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            const img = document.querySelector('.document-modal-body img');
+            if (img) {
+                img.style.cursor = 'grab';
+            }
+        }
+        
+        function openDocumentModal(url, type, title) {
+            const modal = document.getElementById('documentModal');
+            const modalBody = document.getElementById('documentBody');
+            const modalTitle = document.getElementById('documentTitle');
+
+            modalTitle.textContent = title;
+
+            if (type === 'image') {
+                modalBody.innerHTML = '<img src="' + url + '" alt="' + title + '">';
+                const img = modalBody.querySelector('img');
+                if (img) {
+                    img.addEventListener('mousedown', startDrag);
+                    img.addEventListener('mousemove', drag);
+                    img.addEventListener('mouseup', stopDrag);
+                    img.addEventListener('mouseleave', stopDrag);
+                }
+            } else if (type === 'pdf') {
+                modalBody.innerHTML = '<iframe src="' + url + '" type="application/pdf"></iframe>';
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+        }
+
+        function closeDocumentModal() {
+            const modal = document.getElementById('documentModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            resetZoom();
+            isDragging = false;
+            translateX = 0;
+            translateY = 0;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('documentModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDocumentModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDocumentModal();
+            }
+        });
     </script>
+
+    <!-- Document Preview Modal -->
+    <div id="documentModal" class="document-modal">
+        <div class="document-modal-content">
+            <div class="document-modal-header">
+                <h3 id="documentTitle">Document Preview</h3>
+                <div class="zoom-controls-header">
+                    <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                    <span class="zoom-level" id="zoomLevel">100%</span>
+                    <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                </div>
+                <button class="document-modal-close" onclick="closeDocumentModal()">&times;</button>
+            </div>
+            <div class="document-modal-body" id="documentBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-<?php
+/<?php
 require_once __DIR__ . '/../src/security.php';
 secure_session_start();
 require_once __DIR__ . '/../src/auth.php';
@@ -6,6 +6,25 @@ enforce_auth_for_page(basename(__FILE__));
 if (!isset($_SESSION['auth_user_id'])) {
     header('Location: ' . route_url('admin'));
     exit;
+}
+// Fetch approved applications for payout checklist
+require_once __DIR__ . '/../src/db.php';
+$approved = [];
+try {
+    $pdo = get_db_connection();
+    $stmt = $pdo->query("SELECT id, first_name, middle_name, last_name, academic_level, semester FROM scholarship_applications WHERE status = 'approved' ORDER BY submission_date DESC");
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $name = trim(($row['last_name'] ?? '') . ', ' . ($row['first_name'] ?? ''));
+        $approved[] = [
+            'id' => $row['id'],
+            'name' => $name,
+            'yearLevel' => $row['academic_level'] ?? '',
+            'semester' => $row['semester'] ?? '',
+            'paid' => false
+        ];
+    }
+} catch (Exception $e) {
+    error_log('Error fetching approved applications: ' . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -130,21 +149,25 @@ if (!isset($_SESSION['auth_user_id'])) {
                 </div>
             </div>
 
+            <div id="detailsModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="detailsTitle">
+                <div id="detailsOverlay" class="fixed inset-0 bg-black/40 opacity-0 transition-opacity duration-300"></div>
+                <div class="flex min-h-screen items-center justify-center p-4">
+                    <div class="relative w-full max-w-2xl scale-95 opacity-0 rounded-2xl bg-white shadow-lg transition-all duration-300" id="detailsPanel">
+                        <div class="flex items-center justify-between border-b px-4 py-3">
+                            <h3 id="detailsTitle" class="text-lg font-semibold text-[#212121]">Application Details</h3>
+                            <button id="detailsClose" class="rounded-xl p-2 hover:bg-gray-100 focus:ring-2 focus:ring-[#1e88e5]" aria-label="Close">✕</button>
+                        </div>
+                        <div class="p-4" id="detailsContent"></div>
+                    </div>
+                </div>
+            </div>
+
             <script data-page-script="true">
-                (function() {
-                    var items = (window.AppData && Array.isArray(window.AppData.checklist)) ? window.AppData.checklist.slice() : [{
-                            name: 'Dela Cruz, Juan',
-                            yearLevel: '1st Year',
-                            semester: '1st Sem',
-                            paid: false
-                        },
-                        {
-                            name: 'Dela Cruz, Juan',
-                            yearLevel: '1st Year',
-                            semester: '2nd Sem',
-                            paid: false
-                        }
-                    ];
+                // inject server-provided approved checklist into AppData (use DB data only)
+                window.AppData = window.AppData || {};
+                window.AppData.checklist = <?php echo json_encode($approved); ?>;
+                    (function() {
+                    var items = (window.AppData && Array.isArray(window.AppData.checklist)) ? window.AppData.checklist.slice() : [];
                     items = items.map(function(s) {
                         if (s && typeof s === 'object' && !s.semester) {
                             s.semester = '1st Sem';
@@ -175,6 +198,13 @@ if (!isset($_SESSION['auth_user_id'])) {
                     var confirmOk = document.getElementById('confirmOk');
                     var pendingPaidIdx = null;
 
+                    // Details modal elements
+                    var detailsModal = document.getElementById('detailsModal');
+                    var detailsOverlay = document.getElementById('detailsOverlay');
+                    var detailsPanel = document.getElementById('detailsPanel');
+                    var detailsClose = document.getElementById('detailsClose');
+                    var detailsContent = document.getElementById('detailsContent');
+
                     var page = 1;
                     var timer = null;
 
@@ -185,6 +215,14 @@ if (!isset($_SESSION['auth_user_id'])) {
                             key: p[0],
                             dir: p[1]
                         };
+                    }
+
+                    // Escape HTML for safe insertion into details modal
+                    function escapeHtml(str) {
+                        if (str == null) return '';
+                        return String(str).replace(/[&<>"]+/g, function(m) {
+                            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m] || m;
+                        });
                     }
 
                     function applySort(data) {
@@ -256,12 +294,12 @@ if (!isset($_SESSION['auth_user_id'])) {
                         var html = slice.map(function(s, i) {
                             var idx = start + i;
                             var paidClass = s.paid ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-700 border border-gray-200';
-                            return '<tr class="border-b hover:bg-gray-50">' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.name + '</td>' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.yearLevel + '</td>' +
-                                '<td class="px-3 py-2 text-[#212121]">' + (s.semester || '') + '</td>' +
-                                '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + paidClass + '">' + (s.paid ? 'Paid' : 'Unpaid') + '</span><input type="checkbox" aria-label="Mark paid" class="h-4 w-4 rounded border-gray-300 text-[#1e88e5] focus:ring-[#1e88e5]" data-paid-idx="' + idx + '" ' + (s.paid ? 'checked' : '') + '></div></td>' +
-                                '</tr>';
+                                return '<tr data-idx="' + idx + '" class="border-b hover:bg-gray-50 cursor-pointer">' +
+                                    '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.name) + '</td>' +
+                                    '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.yearLevel) + '</td>' +
+                                    '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.semester || '') + '</td>' +
+                                    '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + paidClass + '">' + (s.paid ? 'Paid' : 'Unpaid') + '</span><input type="checkbox" aria-label="Mark paid" class="h-4 w-4 rounded border-gray-300 text-[#1e88e5] focus:ring-[#1e88e5]" data-paid-idx="' + idx + '" ' + (s.paid ? 'checked' : '') + '></div></td>' +
+                                    '</tr>';
                         }).join('');
                         tbody.innerHTML = html;
                         ths.forEach(function(th) {
@@ -378,6 +416,20 @@ if (!isset($_SESSION['auth_user_id'])) {
                         }
                     });
                     document.addEventListener('click', function(e) {
+                        // If the click was on a table row (but not on interactive controls), open details
+                        var tr = e.target.closest('tr[data-idx]');
+                        if (tr && !e.target.closest('button, input, select, a')) {
+                            var ridx = parseInt(tr.getAttribute('data-idx'), 10);
+                            if (!isNaN(ridx)) {
+                                // items corresponds to window.AppData.checklist
+                                var item = (items && items[ridx]) ? items[ridx] : null;
+                                if (item) {
+                                    openDetails(ridx);
+                                    return;
+                                }
+                            }
+                        }
+
                         var c2 = e.target.closest('#confirmClose');
                         if (c2) {
                             closeConfirm();
@@ -430,6 +482,56 @@ if (!isset($_SESSION['auth_user_id'])) {
                         pendingPaidIdx = null;
                         closeConfirm();
                     });
+
+                    function openDetails(idx) {
+                        var item = (items && items[idx]) ? items[idx] : null;
+                        if (!item) return;
+                        var html = '<div class="space-y-3 text-sm text-[#293D82]">';
+                        html += '<div><strong>Name:</strong> ' + escapeHtml(item.name || '') + '</div>';
+                        html += '<div><strong>Year Level:</strong> ' + escapeHtml(item.yearLevel || '') + '</div>';
+                        html += '<div><strong>Semester:</strong> ' + escapeHtml(item.semester || '') + '</div>';
+                        html += '<div><strong>Paid:</strong> ' + (item.paid ? 'Yes' : 'No') + '</div>';
+                        html += '<div><strong>Application ID:</strong> ' + escapeHtml(String(item.id || '')) + '</div>';
+                        html += '</div>';
+                        if (detailsContent) detailsContent.innerHTML = html;
+                        if (!detailsModal) return;
+                        detailsModal.classList.remove('hidden');
+                        requestAnimationFrame(function() {
+                            if (detailsOverlay) {
+                                detailsOverlay.classList.remove('opacity-0');
+                                detailsOverlay.classList.add('opacity-100');
+                            }
+                            if (detailsPanel) {
+                                detailsPanel.classList.remove('opacity-0');
+                                detailsPanel.classList.remove('scale-95');
+                                detailsPanel.classList.add('opacity-100');
+                                detailsPanel.classList.add('scale-100');
+                                detailsClose && detailsClose.focus();
+                            }
+                        });
+                        document.addEventListener('keydown', onDetailsKeyDown);
+                    }
+
+                    function closeDetails() {
+                        if (!detailsModal) return;
+                        if (detailsOverlay) {
+                            detailsOverlay.classList.add('opacity-0');
+                            detailsOverlay.classList.remove('opacity-100');
+                        }
+                        if (detailsPanel) {
+                            detailsPanel.classList.add('opacity-0');
+                            detailsPanel.classList.add('scale-95');
+                            detailsPanel.classList.remove('opacity-100');
+                            detailsPanel.classList.remove('scale-100');
+                        }
+                        setTimeout(function() { detailsModal.classList.add('hidden'); }, 300);
+                        document.removeEventListener('keydown', onDetailsKeyDown);
+                    }
+
+                    function onDetailsKeyDown(e) {
+                        if (e.key === 'Escape') closeDetails();
+                    }
+                    if (detailsClose) detailsClose.addEventListener('click', closeDetails);
 
                     render();
                     renderChips();
