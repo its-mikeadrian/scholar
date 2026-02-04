@@ -16,14 +16,14 @@ try {
     $pdo = get_db_connection();
     // Use a permissive SELECT to avoid failure when optional columns are missing
     $stmt = $pdo->query("SELECT * FROM scholarship_applications ORDER BY submission_date DESC");
-    
+
     while ($row = $stmt->fetch()) {
         // Format name
         $name = trim($row['last_name'] . ', ' . $row['first_name']);
-        
+
         // Map academic level to year level
         $yearLevel = $row['academic_level'] ?? '1st Year';
-        
+
         // Map status to display format
         $statusMap = [
             'pending' => 'For Review',
@@ -32,9 +32,11 @@ try {
             'incomplete' => 'Incomplete'
         ];
         $status = $statusMap[$row['status']] ?? 'For Review';
-        
+
         $applications[] = [
             'id' => $row['id'],
+            'record_type' => 'application',
+            'resubmitted' => !empty($row['resubmitted_from_incomplete']),
             'first_name' => $row['first_name'] ?? null,
             'middle_name' => $row['middle_name'] ?? null,
             'last_name' => $row['last_name'] ?? null,
@@ -61,6 +63,55 @@ try {
             'rejection_reason' => $row['rejection_reason'] ?? null,
             'incomplete_reason' => $row['incomplete_reason'] ?? null
         ];
+    }
+
+    try {
+        $stmt = $pdo->query("SELECT * FROM scholarship_renewals ORDER BY submission_date DESC");
+        while ($row = $stmt->fetch()) {
+            $name = trim(($row['last_name'] ?? '') . ', ' . ($row['first_name'] ?? ''));
+            $yearLevel = $row['academic_level'] ?? '1st Year';
+
+            $statusMap = [
+                'pending' => 'For Review',
+                'approved' => 'Accepted',
+                'rejected' => 'Rejected',
+                'incomplete' => 'Incomplete'
+            ];
+            $status = $statusMap[$row['status']] ?? 'For Review';
+
+            $applications[] = [
+                'id' => $row['id'],
+                'record_type' => 'renewal',
+                'resubmitted' => !empty($row['resubmitted_from_incomplete']),
+                'application_id' => $row['application_id'] ?? null,
+                'first_name' => $row['first_name'] ?? null,
+                'middle_name' => $row['middle_name'] ?? null,
+                'last_name' => $row['last_name'] ?? null,
+                'name' => $name,
+                'yearLevel' => $yearLevel,
+                'semester' => $row['semester'] ?? null,
+                'mothers_maiden_name' => $row['mothers_maiden_name'] ?? null,
+                'fathers_name' => $row['fathers_name'] ?? null,
+                'age' => $row['age'] ?? null,
+                'date_of_birth' => $row['date_of_birth'] ?? null,
+                'sex' => $row['sex'] ?? null,
+                'cellphone_number' => $row['cellphone_number'] ?? null,
+                'house_number' => $row['house_number'] ?? null,
+                'street_address' => $row['street_address'] ?? null,
+                'barangay' => $row['barangay'] ?? null,
+                'municipality' => $row['municipality'] ?? null,
+                'status' => $status,
+                'submissionDate' => $row['submission_date'],
+                'updatedAt' => $row['updated_at'],
+                'cor_coe_file' => $row['cor_coe_file'] ?? null,
+                'cert_grades_file' => $row['cert_grades_file'] ?? null,
+                'barangay_indigency_file' => $row['barangay_indigency_file'] ?? null,
+                'voters_cert_file' => $row['voters_cert_file'] ?? null,
+                'rejection_reason' => $row['rejection_reason'] ?? null,
+                'incomplete_reason' => $row['incomplete_reason'] ?? null
+            ];
+        }
+    } catch (Exception $e) {
     }
 } catch (Exception $e) {
     error_log('Error fetching applications: ' . $e->getMessage());
@@ -506,11 +557,13 @@ try {
                             };
                             var stClass = stClassMap[s.status] || 'bg-gray-500 text-white';
                             var badgeClass = badgeClassMap[s.status] || 'bg-gray-100 text-gray-700 border border-gray-200';
+                            var typeBadge = (s.record_type === 'renewal') ? '<span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] bg-[#e3f2fd] text-[#293D82] border border-[#cfe3fb]">Renewal</span>' : '';
+                            var resubBadge = (s.resubmitted) ? '<span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] bg-[#fff8e1] text-[#5d4037] border border-[#ffe0b2]">Resubmitted</span>' : '';
                             return '<tr class="border-b hover:bg-gray-50">' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.name + '</td>' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.yearLevel + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.name) + typeBadge + resubBadge + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.yearLevel) + '</td>' +
                                 '<td class="px-3 py-2"><button class="rounded-xl bg-[#1e88e5] px-3 py-1 text-white text-xs hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" data-idx="' + rowIdx + '">View</button></td>' +
-                                '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + s.status + '</span><select class="rounded-md px-2 py-1 text-xs focus:ring-2 focus:ring-[#1e88e5] ' + stClass + '" data-status-idx="' + rowIdx + '"><option' + (s.status === 'For Review' ? ' selected' : '') + '>For Review</option><option' + (s.status === 'Accepted' ? ' selected' : '') + '>Accepted</option><option' + (s.status === 'Incomplete' ? ' selected' : '') + '>Incomplete</option><option' + (s.status === 'Rejected' ? ' selected' : '') + '>Rejected</option></select>' +
+                                '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + escapeHtml(s.status) + '</span><select class="rounded-md px-2 py-1 text-xs focus:ring-2 focus:ring-[#1e88e5] ' + stClass + '" data-status-idx="' + rowIdx + '"><option' + (s.status === 'For Review' ? ' selected' : '') + '>For Review</option><option' + (s.status === 'Accepted' ? ' selected' : '') + '>Accepted</option><option' + (s.status === 'Incomplete' ? ' selected' : '') + '>Incomplete</option><option' + (s.status === 'Rejected' ? ' selected' : '') + '>Rejected</option></select>' +
                                 '<button data-details-idx="' + rowIdx + '" class="ml-2 rounded-xl border px-2 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd]">Details</button></div></td>' +
                                 '</tr>';
                         }).join('');
@@ -550,8 +603,14 @@ try {
                     // Escape HTML for safe insertion
                     function escapeHtml(str) {
                         if (!str) return '';
-                        return String(str).replace(/[&<>"']/g, function (m) {
-                            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m];
+                        return String(str).replace(/[&<>"']/g, function(m) {
+                            return {
+                                '&': '&amp;',
+                                '<': '&lt;',
+                                '>': '&gt;',
+                                '"': '&quot;',
+                                "'": '&#39;'
+                            } [m];
                         });
                     }
 
@@ -582,7 +641,9 @@ try {
                             url = window.location.origin + appBase.replace(/\/$/, '') + '/' + url.replace(/^\/+/, '');
                         }
                         url = encodeURI(url);
-                        try { console.debug('Preview URL for', filePath, '->', url); } catch (e) {}
+                        try {
+                            console.debug('Preview URL for', filePath, '->', url);
+                        } catch (e) {}
 
                         // Determine file type by extension
                         var ext = (filePath.split('.').pop() || '').toLowerCase();
@@ -728,11 +789,13 @@ try {
                         };
                         archiveTbody.innerHTML = slice.map(function(s) {
                             var badgeClass = badgeClassMap[s.status] || 'bg-gray-100 text-gray-700 border border-gray-200';
+                            var typeBadge = (s.record_type === 'renewal') ? '<span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] bg-[#e3f2fd] text-[#293D82] border border-[#cfe3fb]">Renewal</span>' : '';
+                            var resubBadge = (s.resubmitted) ? '<span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] bg-[#fff8e1] text-[#5d4037] border border-[#ffe0b2]">Resubmitted</span>' : '';
                             return '<tr class="border-b hover:bg-gray-50">' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.name + '</td>' +
-                                '<td class="px-3 py-2 text-[#212121]">' + s.yearLevel + '</td>' +
-                                '<td class="px-3 py-2 text-[#212121]">' + (s.archivedDate || '') + '</td>' +
-                                '<td class="px-3 py-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + s.status + '</span></td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.name) + typeBadge + resubBadge + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.yearLevel) + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.archivedDate || '') + '</td>' +
+                                '<td class="px-3 py-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + badgeClass + '">' + escapeHtml(s.status) + '</span></td>' +
                                 '</tr>';
                         }).join('');
                     }
@@ -894,7 +957,11 @@ try {
 
                             // If selecting Rejected, prompt for reason first
                             if (newStatus === 'Rejected') {
-                                pendingReject = { idx: i, sel: sel, prevStatus: prevStatus };
+                                pendingReject = {
+                                    idx: i,
+                                    sel: sel,
+                                    prevStatus: prevStatus
+                                };
                                 if (rejectReasonEl) rejectReasonEl.value = '';
                                 if (rejectModal) {
                                     rejectModal.classList.remove('hidden');
@@ -917,7 +984,11 @@ try {
 
                             // If selecting Incomplete, prompt for reason first
                             if (newStatus === 'Incomplete') {
-                                pendingIncomplete = { idx: i, sel: sel, prevStatus: prevStatus };
+                                pendingIncomplete = {
+                                    idx: i,
+                                    sel: sel,
+                                    prevStatus: prevStatus
+                                };
                                 if (incompleteReasonEl) incompleteReasonEl.value = '';
                                 if (incompleteModal) {
                                     incompleteModal.classList.remove('hidden');
@@ -950,19 +1021,30 @@ try {
                             // send update to server
                             var csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
                             var appId = students[i].id;
+                            var recordType = students[i].record_type || 'application';
                             try {
-                                console.debug('Updating status', {id: appId, status: newStatus, csrf_present: !!csrfToken});
+                                console.debug('Updating status', {
+                                    id: appId,
+                                    status: newStatus,
+                                    csrf_present: !!csrfToken
+                                });
                                 fetch(APPLICATION_ACTIONS_URL, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&id=' + encodeURIComponent(appId) + '&status=' + encodeURIComponent(newStatus)
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded'
+                                    },
+                                    body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&source=' + encodeURIComponent(recordType) + '&id=' + encodeURIComponent(appId) + '&status=' + encodeURIComponent(newStatus)
                                 }).then(function(res) {
                                     console.debug('Status update response status:', res.status);
                                     return res.json().then(function(data) {
                                         console.debug('Status update response json:', data);
                                         return data;
                                     }).catch(function() {
-                                        return { success: false, message: 'Invalid JSON response', status: res.status };
+                                        return {
+                                            success: false,
+                                            message: 'Invalid JSON response',
+                                            status: res.status
+                                        };
                                     });
                                 }).then(function(data) {
                                     if (!data || !data.success) {
@@ -994,7 +1076,9 @@ try {
                             rejectPanel.classList.remove('opacity-100');
                             rejectPanel.classList.remove('scale-100');
                         }
-                        setTimeout(function() { rejectModal.classList.add('hidden'); }, 300);
+                        setTimeout(function() {
+                            rejectModal.classList.add('hidden');
+                        }, 300);
                     }
 
                     // incomplete modal actions
@@ -1010,7 +1094,9 @@ try {
                             incompletePanel.classList.remove('opacity-100');
                             incompletePanel.classList.remove('scale-100');
                         }
-                        setTimeout(function() { incompleteModal.classList.add('hidden'); }, 300);
+                        setTimeout(function() {
+                            incompleteModal.classList.add('hidden');
+                        }, 300);
                     }
 
                     if (rejectClose) rejectClose.addEventListener('click', function() {
@@ -1038,14 +1124,24 @@ try {
                         // send to server with reason
                         var csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
                         var appId = students[i].id;
+                        var recordType = students[i].record_type || 'application';
                         try {
-                            console.debug('Rejecting application', {id: appId, reason_present: !!reason});
+                            console.debug('Rejecting application', {
+                                id: appId,
+                                reason_present: !!reason
+                            });
                             fetch(APPLICATION_ACTIONS_URL, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&id=' + encodeURIComponent(appId) + '&status=' + encodeURIComponent('Rejected') + '&reason=' + encodeURIComponent(reason)
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&source=' + encodeURIComponent(recordType) + '&id=' + encodeURIComponent(appId) + '&status=' + encodeURIComponent('Rejected') + '&reason=' + encodeURIComponent(reason)
                             }).then(function(res) {
-                                return res.json().catch(function() { return { success: false }; });
+                                return res.json().catch(function() {
+                                    return {
+                                        success: false
+                                    };
+                                });
                             }).then(function(data) {
                                 if (!data || !data.success) {
                                     // revert
@@ -1062,7 +1158,9 @@ try {
                                 render();
                                 alert('Error updating rejection');
                             });
-                        } catch (e) { console.error(e); }
+                        } catch (e) {
+                            console.error(e);
+                        }
 
                         pendingReject = null;
                         closeRejectModal();
@@ -1093,14 +1191,24 @@ try {
                         // send to server with reason
                         var csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
                         var appId = students[i].id;
+                        var recordType = students[i].record_type || 'application';
                         try {
-                            console.debug('Setting application incomplete', {id: appId, reason_present: !!reason});
+                            console.debug('Setting application incomplete', {
+                                id: appId,
+                                reason_present: !!reason
+                            });
                             fetch(APPLICATION_ACTIONS_URL, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&id=' + encodeURIComponent(appId) + '&status=' + encodeURIComponent('Incomplete') + '&reason=' + encodeURIComponent(reason)
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&source=' + encodeURIComponent(recordType) + '&id=' + encodeURIComponent(appId) + '&status=' + encodeURIComponent('Incomplete') + '&reason=' + encodeURIComponent(reason)
                             }).then(function(res) {
-                                return res.json().catch(function() { return { success: false }; });
+                                return res.json().catch(function() {
+                                    return {
+                                        success: false
+                                    };
+                                });
                             }).then(function(data) {
                                 if (!data || !data.success) {
                                     // revert
@@ -1117,7 +1225,9 @@ try {
                                 render();
                                 alert('Error updating status');
                             });
-                        } catch (e) { console.error(e); }
+                        } catch (e) {
+                            console.error(e);
+                        }
 
                         pendingIncomplete = null;
                         closeIncompleteModal();
@@ -1152,6 +1262,7 @@ try {
                         html += '</div>';
                         // files (show links)
                         html += '<div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">';
+
                         function fileLink(label, path) {
                             if (!path) return '';
                             var url = path;
@@ -1180,8 +1291,16 @@ try {
                         if (!detailsModal) return;
                         detailsModal.classList.remove('hidden');
                         requestAnimationFrame(function() {
-                            if (detailsOverlay) { detailsOverlay.classList.remove('opacity-0'); detailsOverlay.classList.add('opacity-100'); }
-                            if (detailsPanel) { detailsPanel.classList.remove('opacity-0'); detailsPanel.classList.remove('scale-95'); detailsPanel.classList.add('opacity-100'); detailsPanel.classList.add('scale-100'); }
+                            if (detailsOverlay) {
+                                detailsOverlay.classList.remove('opacity-0');
+                                detailsOverlay.classList.add('opacity-100');
+                            }
+                            if (detailsPanel) {
+                                detailsPanel.classList.remove('opacity-0');
+                                detailsPanel.classList.remove('scale-95');
+                                detailsPanel.classList.add('opacity-100');
+                                detailsPanel.classList.add('scale-100');
+                            }
                             if (detailsClose) detailsClose.focus();
                         });
                         document.addEventListener('keydown', detailsKeyHandler);
@@ -1189,13 +1308,25 @@ try {
 
                     function closeDetails() {
                         if (!detailsModal) return;
-                        if (detailsOverlay) { detailsOverlay.classList.add('opacity-0'); detailsOverlay.classList.remove('opacity-100'); }
-                        if (detailsPanel) { detailsPanel.classList.add('opacity-0'); detailsPanel.classList.add('scale-95'); detailsPanel.classList.remove('opacity-100'); detailsPanel.classList.remove('scale-100'); }
-                        setTimeout(function() { detailsModal.classList.add('hidden'); }, 300);
+                        if (detailsOverlay) {
+                            detailsOverlay.classList.add('opacity-0');
+                            detailsOverlay.classList.remove('opacity-100');
+                        }
+                        if (detailsPanel) {
+                            detailsPanel.classList.add('opacity-0');
+                            detailsPanel.classList.add('scale-95');
+                            detailsPanel.classList.remove('opacity-100');
+                            detailsPanel.classList.remove('scale-100');
+                        }
+                        setTimeout(function() {
+                            detailsModal.classList.add('hidden');
+                        }, 300);
                         document.removeEventListener('keydown', detailsKeyHandler);
                     }
 
-                    function detailsKeyHandler(e) { if (e.key === 'Escape') closeDetails(); }
+                    function detailsKeyHandler(e) {
+                        if (e.key === 'Escape') closeDetails();
+                    }
 
                     if (detailsClose) detailsClose.addEventListener('click', closeDetails);
 

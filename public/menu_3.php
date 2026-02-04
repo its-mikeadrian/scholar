@@ -1,4 +1,4 @@
-/<?php
+<?php
 require_once __DIR__ . '/../src/security.php';
 secure_session_start();
 require_once __DIR__ . '/../src/auth.php';
@@ -7,12 +7,12 @@ if (!isset($_SESSION['auth_user_id'])) {
     header('Location: ' . route_url('admin'));
     exit;
 }
-// Fetch approved applications for payout checklist
+// Fetch approved applications and renewals for payout checklist
 require_once __DIR__ . '/../src/db.php';
 $approved = [];
 try {
     $pdo = get_db_connection();
-    $stmt = $pdo->query("SELECT id, first_name, middle_name, last_name, academic_level, semester FROM scholarship_applications WHERE status = 'approved' ORDER BY submission_date DESC");
+    $stmt = $pdo->query("SELECT * FROM scholarship_applications WHERE status = 'approved' ORDER BY submission_date DESC");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $name = trim(($row['last_name'] ?? '') . ', ' . ($row['first_name'] ?? ''));
         $approved[] = [
@@ -20,8 +20,27 @@ try {
             'name' => $name,
             'yearLevel' => $row['academic_level'] ?? '',
             'semester' => $row['semester'] ?? '',
-            'paid' => false
+            'source' => 'application',
+            'paid' => !empty($row['is_paid']),
+            'paidDate' => $row['paid_date'] ?? null
         ];
+    }
+
+    try {
+        $stmt = $pdo->query("SELECT * FROM scholarship_renewals WHERE status = 'approved' ORDER BY submission_date DESC");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $name = trim(($row['last_name'] ?? '') . ', ' . ($row['first_name'] ?? '')) . ' (Renewal)';
+            $approved[] = [
+                'id' => $row['id'],
+                'name' => $name,
+                'yearLevel' => $row['academic_level'] ?? '',
+                'semester' => $row['semester'] ?? '',
+                'source' => 'renewal',
+                'paid' => !empty($row['is_paid']),
+                'paidDate' => $row['paid_date'] ?? null
+            ];
+        }
+    } catch (Exception $e) {
     }
 } catch (Exception $e) {
     error_log('Error fetching approved applications: ' . $e->getMessage());
@@ -40,6 +59,7 @@ try {
 <body class="min-h-screen bg-[#f0f7ff]">
     <?php require __DIR__ . '/header.php'; ?>
     <?php require __DIR__ . '/sidebar.php'; ?>
+    <?php echo csrf_input(); ?>
     <div class="pt-14 lg:pl-16" id="appMain">
         <main id="app-content" class="max-w-7xl mx-auto px-4 py-6">
             <div class="rounded-2xl bg-white p-6 shadow-sm border border-slate-100">
@@ -100,6 +120,7 @@ try {
                             </select>
                         </label>
                         <button id="exportCsv" class="rounded-xl bg-[#1e88e5] px-3 py-2 text-white text-sm hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Download CSV">Export CSV</button>
+                        <button id="openArchive" class="rounded-xl bg-[#1e88e5] px-3 py-2 text-white text-sm hover:bg-[#1976d2] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Open archive">Archive</button>
                     </div>
                 </div>
                 <div class="mt-2 hidden" id="chipsContainer">
@@ -162,17 +183,104 @@ try {
                 </div>
             </div>
 
+            <div id="archiveModal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="archiveTitle">
+                <div id="archiveOverlay" class="fixed inset-0 bg-black/40 opacity-0 transition-opacity duration-300"></div>
+                <div class="flex min-h-screen items-center justify-center p-4">
+                    <div class="relative w-full max-w-5xl scale-95 opacity-0 rounded-2xl bg-white shadow-lg transition-all duration-300" id="archivePanel">
+                        <div class="flex items-center justify-between border-b px-4 py-3">
+                            <h3 id="archiveTitle" class="text-lg font-semibold text-[#212121]">Archive</h3>
+                            <button id="archiveClose" class="rounded-xl p-2 hover:bg-gray-100 focus:ring-2 focus:ring-[#1e88e5]" aria-label="Close">✕</button>
+                        </div>
+                        <div class="p-4">
+                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                                <label class="sm:col-span-1 flex items-center gap-2 rounded-xl border px-3 py-2 focus-within:ring-2 focus-within:ring-[#1e88e5]" aria-label="Search archive">
+                                    <svg class="h-5 w-5 text-[#293D82]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="7" />
+                                        <path d="M21 21l-4.3-4.3" />
+                                    </svg>
+                                    <input id="archiveSearch" type="text" placeholder="Search" class="w-full outline-none text-sm" />
+                                </label>
+                                <label class="sm:col-span-1 block">
+                                    <span class="mb-1 block text-xs text-[#293D82]">Year Level</span>
+                                    <select id="archiveYear" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
+                                        <option value="">All</option>
+                                        <option>1st Year</option>
+                                        <option>2nd Year</option>
+                                        <option>3rd Year</option>
+                                        <option>4th Year</option>
+                                    </select>
+                                </label>
+                                <label class="sm:col-span-1 block">
+                                    <span class="mb-1 block text-xs text-[#293D82]">Semester</span>
+                                    <select id="archiveSemester" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
+                                        <option value="">All</option>
+                                        <option>1st Sem</option>
+                                        <option>2nd Sem</option>
+                                    </select>
+                                </label>
+                                <label class="sm:col-span-1 block">
+                                    <span class="mb-1 block text-xs text-[#293D82]">Paid Date</span>
+                                    <input id="archiveDate" type="date" class="w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]" />
+                                </label>
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-between">
+                                <div class="text-sm text-[#293D82]" id="archiveResultCount">0 results</div>
+                                <label class="flex items-center gap-2 text-sm text-[#293D82]"><span>Per page</span>
+                                    <select id="archivePageSize" class="rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-[#1e88e5]">
+                                        <option>5</option>
+                                        <option selected>10</option>
+                                        <option>20</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="mt-4 overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="border-b text-[#293D82]">
+                                        <tr class="text-left">
+                                            <th class="px-3 py-2">Name</th>
+                                            <th class="px-3 py-2">Year Level</th>
+                                            <th class="px-3 py-2">Semester</th>
+                                            <th class="px-3 py-2">Paid Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="archiveTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-4 flex items-center justify-between">
+                                <div class="text-xs text-[#293D82]" id="archivePageInfo"></div>
+                                <div class="flex items-center gap-2">
+                                    <button id="archivePrev" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Previous page">Prev</button>
+                                    <button id="archiveNext" class="rounded-xl border px-3 py-1 text-xs text-[#293D82] hover:bg-[#e3f2fd] focus:ring-2 focus:ring-[#1e88e5]" aria-label="Next page">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <script data-page-script="true">
                 // inject server-provided approved checklist into AppData (use DB data only)
                 window.AppData = window.AppData || {};
                 window.AppData.checklist = <?php echo json_encode($approved); ?>;
-                    (function() {
+                (function() {
                     var items = (window.AppData && Array.isArray(window.AppData.checklist)) ? window.AppData.checklist.slice() : [];
+                    var PAYOUT_ACTION_URL = '<?php echo htmlspecialchars(route_url("application_actions.php"), ENT_QUOTES, "UTF-8"); ?>?action=mark_paid';
                     items = items.map(function(s) {
                         if (s && typeof s === 'object' && !s.semester) {
                             s.semester = '1st Sem';
                         }
                         return s;
+                    });
+                    items.forEach(function(s, idx) {
+                        if (s && typeof s === 'object' && s._itemsIndex == null) s._itemsIndex = idx;
+                    });
+                    items.forEach(function(s) {
+                        if (s && typeof s === 'object' && s.paid && !s.paidDate) {
+                            s.paidDate = (new Date()).toISOString().slice(0, 10);
+                        }
                     });
                     var searchEl = document.getElementById('searchInput');
                     var sortEl = document.getElementById('sortSelect');
@@ -205,6 +313,24 @@ try {
                     var detailsClose = document.getElementById('detailsClose');
                     var detailsContent = document.getElementById('detailsContent');
 
+                    var openArchiveBtn = document.getElementById('openArchive');
+                    var archiveModal = document.getElementById('archiveModal');
+                    var archiveOverlay = document.getElementById('archiveOverlay');
+                    var archivePanel = document.getElementById('archivePanel');
+                    var archiveClose = document.getElementById('archiveClose');
+                    var archiveSearchEl = document.getElementById('archiveSearch');
+                    var archiveYearEl = document.getElementById('archiveYear');
+                    var archiveSemesterEl = document.getElementById('archiveSemester');
+                    var archiveDateEl = document.getElementById('archiveDate');
+                    var archiveResultCountEl = document.getElementById('archiveResultCount');
+                    var archivePageInfoEl = document.getElementById('archivePageInfo');
+                    var archivePageSizeEl = document.getElementById('archivePageSize');
+                    var archivePrevBtn = document.getElementById('archivePrev');
+                    var archiveNextBtn = document.getElementById('archiveNext');
+                    var archiveTbody = document.getElementById('archiveTableBody');
+                    var archivePage = 1;
+                    var archiveTimer = null;
+
                     var page = 1;
                     var timer = null;
 
@@ -221,7 +347,12 @@ try {
                     function escapeHtml(str) {
                         if (str == null) return '';
                         return String(str).replace(/[&<>"]+/g, function(m) {
-                            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m] || m;
+                            return {
+                                '&': '&amp;',
+                                '<': '&lt;',
+                                '>': '&gt;',
+                                '"': '&quot;'
+                            } [m] || m;
                         });
                     }
 
@@ -240,11 +371,23 @@ try {
                         });
                     }
 
+                    function getActiveBase() {
+                        return items.filter(function(s) {
+                            return !s.paid;
+                        });
+                    }
+
+                    function getArchiveBase() {
+                        return items.filter(function(s) {
+                            return !!s.paid;
+                        });
+                    }
+
                     function filtered() {
                         var q = (searchEl.value || '').toLowerCase();
                         var y = yearEl.value || '';
                         var sem = semesterEl ? (semesterEl.value || '') : '';
-                        var data = items.slice();
+                        var data = getActiveBase();
                         if (q) data = data.filter(function(s) {
                             return s.name.toLowerCase().indexOf(q) !== -1;
                         });
@@ -292,14 +435,14 @@ try {
                         prevBtn.disabled = page <= 1;
                         nextBtn.disabled = page >= maxPage;
                         var html = slice.map(function(s, i) {
-                            var idx = start + i;
+                            var idx = (s && typeof s === 'object' && s._itemsIndex != null) ? s._itemsIndex : (start + i);
                             var paidClass = s.paid ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-700 border border-gray-200';
-                                return '<tr data-idx="' + idx + '" class="border-b hover:bg-gray-50 cursor-pointer">' +
-                                    '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.name) + '</td>' +
-                                    '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.yearLevel) + '</td>' +
-                                    '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.semester || '') + '</td>' +
-                                    '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + paidClass + '">' + (s.paid ? 'Paid' : 'Unpaid') + '</span><input type="checkbox" aria-label="Mark paid" class="h-4 w-4 rounded border-gray-300 text-[#1e88e5] focus:ring-[#1e88e5]" data-paid-idx="' + idx + '" ' + (s.paid ? 'checked' : '') + '></div></td>' +
-                                    '</tr>';
+                            return '<tr data-idx="' + idx + '" class="border-b hover:bg-gray-50 cursor-pointer">' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.name) + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.yearLevel) + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.semester || '') + '</td>' +
+                                '<td class="px-3 py-2"><div class="flex items-center gap-2"><span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ' + paidClass + '">' + (s.paid ? 'Paid' : 'Unpaid') + '</span><input type="checkbox" aria-label="Mark paid" class="h-4 w-4 rounded border-gray-300 text-[#1e88e5] focus:ring-[#1e88e5]" data-paid-idx="' + idx + '" ' + (s.paid ? 'checked' : '') + '></div></td>' +
+                                '</tr>';
                         }).join('');
                         tbody.innerHTML = html;
                         ths.forEach(function(th) {
@@ -340,6 +483,101 @@ try {
 
                     function onKeyDownConfirm(e) {
                         if (e.key === 'Escape') closeConfirm();
+                    }
+
+                    function openArchive() {
+                        if (!archiveModal) return;
+                        archivePage = 1;
+                        renderArchive();
+                        archiveModal.classList.remove('hidden');
+                        requestAnimationFrame(function() {
+                            if (archiveOverlay) {
+                                archiveOverlay.classList.remove('opacity-0');
+                                archiveOverlay.classList.add('opacity-100');
+                            }
+                            if (archivePanel) {
+                                archivePanel.classList.remove('opacity-0');
+                                archivePanel.classList.remove('scale-95');
+                                archivePanel.classList.add('opacity-100');
+                                archivePanel.classList.add('scale-100');
+                            }
+                            if (archiveClose) archiveClose.focus();
+                        });
+                        document.addEventListener('keydown', onArchiveKeyDown);
+                    }
+
+                    function closeArchive() {
+                        if (!archiveModal) return;
+                        if (archiveOverlay) {
+                            archiveOverlay.classList.add('opacity-0');
+                            archiveOverlay.classList.remove('opacity-100');
+                        }
+                        if (archivePanel) {
+                            archivePanel.classList.add('opacity-0');
+                            archivePanel.classList.add('scale-95');
+                            archivePanel.classList.remove('opacity-100');
+                            archivePanel.classList.remove('scale-100');
+                        }
+                        setTimeout(function() {
+                            archiveModal.classList.add('hidden');
+                        }, 300);
+                        document.removeEventListener('keydown', onArchiveKeyDown);
+                    }
+
+                    function onArchiveKeyDown(e) {
+                        if (e.key === 'Escape') closeArchive();
+                    }
+
+                    function archiveFiltered() {
+                        var q = (archiveSearchEl && archiveSearchEl.value ? archiveSearchEl.value : '').toLowerCase();
+                        var y = archiveYearEl ? (archiveYearEl.value || '') : '';
+                        var sem = archiveSemesterEl ? (archiveSemesterEl.value || '') : '';
+                        var dt = archiveDateEl ? (archiveDateEl.value || '') : '';
+                        var data = getArchiveBase();
+                        if (q) data = data.filter(function(s) {
+                            return s.name.toLowerCase().indexOf(q) !== -1;
+                        });
+                        if (y) data = data.filter(function(s) {
+                            return s.yearLevel === y;
+                        });
+                        if (sem) data = data.filter(function(s) {
+                            return s.semester === sem;
+                        });
+                        if (dt) data = data.filter(function(s) {
+                            return (s.paidDate || '') === dt;
+                        });
+                        data.sort(function(a, b) {
+                            var av = String(a.name || '').toLowerCase();
+                            var bv = String(b.name || '').toLowerCase();
+                            if (av < bv) return -1;
+                            if (av > bv) return 1;
+                            return 0;
+                        });
+                        return data;
+                    }
+
+                    function renderArchive() {
+                        if (!archiveModal || !archiveTbody) return;
+                        var per = parseInt((archivePageSizeEl && archivePageSizeEl.value) ? archivePageSizeEl.value : '10', 10);
+                        var data = archiveFiltered();
+                        var total = data.length;
+                        var maxPage = Math.max(1, Math.ceil(total / per));
+                        if (archivePage > maxPage) archivePage = maxPage;
+                        var start = (archivePage - 1) * per;
+                        var end = Math.min(start + per, total);
+                        var slice = data.slice(start, end);
+                        if (archiveResultCountEl) archiveResultCountEl.textContent = String(total) + ' results';
+                        if (archivePageInfoEl) archivePageInfoEl.textContent = 'Showing ' + (total === 0 ? 0 : start + 1) + '–' + end + ' of ' + total + ' • Page ' + archivePage + ' of ' + maxPage;
+                        if (archivePrevBtn) archivePrevBtn.disabled = archivePage <= 1;
+                        if (archiveNextBtn) archiveNextBtn.disabled = archivePage >= maxPage;
+                        archiveTbody.innerHTML = slice.map(function(s) {
+                            return '<tr class="border-b hover:bg-gray-50">' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.name || '') + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.yearLevel || '') + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.semester || '') + '</td>' +
+                                '<td class="px-3 py-2 text-[#212121]">' + escapeHtml(s.paidDate || '') + '</td>' +
+                                '</tr>';
+                        }).join('');
                     }
 
                     searchEl.addEventListener('input', function() {
@@ -415,6 +653,41 @@ try {
                             window.showToast && window.showToast('error', 'Export failed');
                         }
                     });
+                    if (openArchiveBtn) openArchiveBtn.addEventListener('click', openArchive);
+                    if (archiveClose) archiveClose.addEventListener('click', closeArchive);
+                    if (archivePrevBtn) archivePrevBtn.addEventListener('click', function() {
+                        if (archivePage > 1) {
+                            archivePage -= 1;
+                            renderArchive();
+                        }
+                    });
+                    if (archiveNextBtn) archiveNextBtn.addEventListener('click', function() {
+                        archivePage += 1;
+                        renderArchive();
+                    });
+                    if (archivePageSizeEl) archivePageSizeEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveYearEl) archiveYearEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveSemesterEl) archiveSemesterEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveDateEl) archiveDateEl.addEventListener('change', function() {
+                        archivePage = 1;
+                        renderArchive();
+                    });
+                    if (archiveSearchEl) archiveSearchEl.addEventListener('input', function() {
+                        if (archiveTimer) clearTimeout(archiveTimer);
+                        archiveTimer = setTimeout(function() {
+                            archivePage = 1;
+                            renderArchive();
+                        }, 200);
+                    });
                     document.addEventListener('click', function(e) {
                         // If the click was on a table row (but not on interactive controls), open details
                         var tr = e.target.closest('tr[data-idx]');
@@ -437,6 +710,14 @@ try {
                         }
                         if (confirmModal && !confirmPanel.contains(e.target) && !e.target.closest('#confirmPanel')) {
                             if (!confirmModal.classList.contains('hidden')) closeConfirm();
+                        }
+                        var ac = e.target.closest('#archiveClose');
+                        if (ac) {
+                            closeArchive();
+                            return;
+                        }
+                        if (archiveModal && !archiveModal.classList.contains('hidden') && archivePanel && !archivePanel.contains(e.target) && !e.target.closest('#archivePanel') && !e.target.closest('#openArchive')) {
+                            closeArchive();
                         }
                         var chip = e.target.closest('button[data-clear]');
                         if (chip) {
@@ -470,13 +751,46 @@ try {
                         }
                     });
                     confirmOk.addEventListener('click', function() {
-                        if (pendingPaidIdx !== null) {
+                        if (pendingPaidIdx === null) return;
+                        var item = items[pendingPaidIdx];
+                        if (!item || item.paid) {
+                            pendingPaidIdx = null;
+                            closeConfirm();
+                            render();
+                            return;
+                        }
+
+                        var csrfToken = document.querySelector('input[name="csrf_token"]') ? document.querySelector('input[name="csrf_token"]').value : '';
+                        fetch(PAYOUT_ACTION_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'csrf_token=' + encodeURIComponent(csrfToken) + '&source=' + encodeURIComponent(String(item.source || 'application')) + '&id=' + encodeURIComponent(String(item.id || ''))
+                        }).then(function(res) {
+                            return res.json().catch(function() {
+                                return null;
+                            });
+                        }).then(function(data) {
+                            if (!data || !data.success) {
+                                alert((data && data.message) ? data.message : 'Failed to mark as paid.');
+                                pendingPaidIdx = null;
+                                closeConfirm();
+                                render();
+                                return;
+                            }
                             items[pendingPaidIdx].paid = true;
+                            items[pendingPaidIdx].paidDate = data.paid_date || (new Date()).toISOString().slice(0, 10);
                             if (window.AppData) window.AppData.checklist = items.slice();
                             pendingPaidIdx = null;
                             closeConfirm();
                             render();
-                        }
+                        }).catch(function() {
+                            alert('Failed to mark as paid.');
+                            pendingPaidIdx = null;
+                            closeConfirm();
+                            render();
+                        });
                     });
                     confirmCancel.addEventListener('click', function() {
                         pendingPaidIdx = null;
@@ -524,7 +838,9 @@ try {
                             detailsPanel.classList.remove('opacity-100');
                             detailsPanel.classList.remove('scale-100');
                         }
-                        setTimeout(function() { detailsModal.classList.add('hidden'); }, 300);
+                        setTimeout(function() {
+                            detailsModal.classList.add('hidden');
+                        }, 300);
                         document.removeEventListener('keydown', onDetailsKeyDown);
                     }
 

@@ -24,6 +24,8 @@ CREATE TABLE `scholarship_applications` (
   `barangay_indigency_file` varchar(255) DEFAULT NULL,
   `voters_cert_file` varchar(255) DEFAULT NULL,
   `status` enum('pending','approved','rejected','incomplete') NOT NULL DEFAULT 'pending',
+  `is_paid` tinyint(1) NOT NULL DEFAULT 0,
+  `paid_date` date DEFAULT NULL,
   `submission_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `notes` text DEFAULT NULL

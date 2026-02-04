@@ -36,6 +36,8 @@ try {
         $id = (int)($_POST['id'] ?? 0);
         $status = trim($_POST['status'] ?? '');
         $reason = trim($_POST['reason'] ?? '');
+        $source = trim($_POST['source'] ?? 'application');
+        $target_table = ($source === 'renewal') ? 'scholarship_renewals' : 'scholarship_applications';
 
         if ($id <= 0 || $status === '') {
             http_response_code(400);
@@ -69,7 +71,7 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare('SELECT id FROM scholarship_applications WHERE id = ? LIMIT 1');
+        $stmt = $pdo->prepare("SELECT id FROM {$target_table} WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) {
@@ -78,32 +80,106 @@ try {
             exit;
         }
 
-        // If rejected, attempt to store reason as well. If the column doesn't exist, add it and retry.
+        // If rejected/incomplete, attempt to store reason as well. If the column doesn't exist, add it and retry.
         if ($dbStatus === 'rejected') {
             try {
-                $upd = $pdo->prepare('UPDATE scholarship_applications SET status = ?, rejection_reason = ?, updated_at = NOW() WHERE id = ?');
+                $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, rejection_reason = ?, updated_at = NOW() WHERE id = ?");
                 $upd->execute([$dbStatus, $reason, $id]);
             } catch (Exception $ex) {
                 error_log('application_actions: failed to update rejection_reason, trying to add column: ' . $ex->getMessage());
                 try {
-                    $pdo->exec("ALTER TABLE scholarship_applications ADD COLUMN rejection_reason TEXT NULL");
-                    $upd = $pdo->prepare('UPDATE scholarship_applications SET status = ?, rejection_reason = ?, updated_at = NOW() WHERE id = ?');
+                    $pdo->exec("ALTER TABLE {$target_table} ADD COLUMN rejection_reason TEXT NULL");
+                    $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, rejection_reason = ?, updated_at = NOW() WHERE id = ?");
                     $upd->execute([$dbStatus, $reason, $id]);
                 } catch (Exception $ex2) {
                     error_log('application_actions: failed to add column or update reason: ' . $ex2->getMessage());
                     // fallback: update only status
-                    $upd = $pdo->prepare('UPDATE scholarship_applications SET status = ?, updated_at = NOW() WHERE id = ?');
+                    $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, updated_at = NOW() WHERE id = ?");
+                    $upd->execute([$dbStatus, $id]);
+                }
+            }
+        } elseif ($dbStatus === 'incomplete') {
+            try {
+                $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, incomplete_reason = ?, updated_at = NOW() WHERE id = ?");
+                $upd->execute([$dbStatus, $reason, $id]);
+            } catch (Exception $ex) {
+                error_log('application_actions: failed to update incomplete_reason, trying to add column: ' . $ex->getMessage());
+                try {
+                    $pdo->exec("ALTER TABLE {$target_table} ADD COLUMN incomplete_reason TEXT NULL");
+                    $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, incomplete_reason = ?, updated_at = NOW() WHERE id = ?");
+                    $upd->execute([$dbStatus, $reason, $id]);
+                } catch (Exception $ex2) {
+                    error_log('application_actions: failed to add column or update incomplete reason: ' . $ex2->getMessage());
+                    $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, updated_at = NOW() WHERE id = ?");
                     $upd->execute([$dbStatus, $id]);
                 }
             }
         } else {
-            $upd = $pdo->prepare('UPDATE scholarship_applications SET status = ?, updated_at = NOW() WHERE id = ?');
+            $upd = $pdo->prepare("UPDATE {$target_table} SET status = ?, updated_at = NOW() WHERE id = ?");
             $upd->execute([$dbStatus, $id]);
         }
 
-        error_log('application_actions: status updated by user=' . ($user_id ?? 'null') . ' id=' . $id . ' -> ' . $dbStatus);
+        error_log('application_actions: status updated by user=' . ($user_id ?? 'null') . ' source=' . $source . ' id=' . $id . ' -> ' . $dbStatus);
 
         echo json_encode(['success' => true, 'message' => 'Status updated', 'status' => $dbStatus]);
+        exit;
+    }
+
+    if ($action === 'mark_paid') {
+        $id = (int)($_POST['id'] ?? 0);
+        $source = trim($_POST['source'] ?? 'application');
+        $target_table = ($source === 'renewal') ? 'scholarship_renewals' : 'scholarship_applications';
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing id']);
+            exit;
+        }
+
+        if ($role === 'student') {
+            error_log('application_actions: Forbidden role attempted mark_paid. user=' . ($user_id ?? 'null') . ' role=' . $role);
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("SELECT id FROM {$target_table} WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Application not found']);
+            exit;
+        }
+
+        try {
+            $upd = $pdo->prepare("UPDATE {$target_table} SET is_paid = 1, paid_date = CURDATE(), updated_at = NOW() WHERE id = ?");
+            $upd->execute([$id]);
+        } catch (Exception $ex) {
+            error_log('application_actions: failed to update is_paid/paid_date, trying to add columns: ' . $ex->getMessage());
+            try {
+                $pdo->exec("ALTER TABLE {$target_table} ADD COLUMN is_paid TINYINT(1) NOT NULL DEFAULT 0");
+            } catch (Exception $ex2) {
+            }
+            try {
+                $pdo->exec("ALTER TABLE {$target_table} ADD COLUMN paid_date DATE NULL");
+            } catch (Exception $ex3) {
+            }
+            $upd = $pdo->prepare("UPDATE {$target_table} SET is_paid = 1, paid_date = CURDATE(), updated_at = NOW() WHERE id = ?");
+            $upd->execute([$id]);
+        }
+
+        $stmt = $pdo->prepare("SELECT is_paid, paid_date FROM {$target_table} WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Marked as paid',
+            'id' => $id,
+            'source' => $source,
+            'is_paid' => (int)($row['is_paid'] ?? 1),
+            'paid_date' => $row['paid_date'] ?? null,
+        ]);
         exit;
     }
 

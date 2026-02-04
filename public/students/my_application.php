@@ -10,6 +10,8 @@ enforce_student_profile_completed($conn);
 $user_id = auth_user_id();
 $application = null;
 $application_status = 'pending';
+$latest_renewal = null;
+$initial_step = 1;
 
 if ($user_id) {
     try {
@@ -17,16 +19,46 @@ if ($user_id) {
         $stmt = $pdo->prepare("SELECT * FROM scholarship_applications WHERE user_id = ? ORDER BY submission_date DESC LIMIT 1");
         $stmt->execute([$user_id]);
         $application = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if ($application) {
             $application_status = $application['status'];
         }
 
-        // Determine initial tracker step based on application status
+        if ($application) {
+            try {
+                $stmt = $pdo->prepare("SELECT * FROM scholarship_renewals WHERE user_id = ? AND application_id = ? ORDER BY submission_date DESC LIMIT 1");
+                $stmt->execute([$user_id, (int)($application['id'] ?? 0)]);
+                $latest_renewal = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            } catch (Exception $e) {
+                $latest_renewal = null;
+            }
+        }
+
+        // Determine initial tracker step
         $initial_step = 2; // default: Under Review
         if ($application) {
-            $status_lc = strtolower($application['status'] ?? '');
-            if (in_array($status_lc, ['accepted', 'approved', 'rejected', 'incomplete'])) {
+            $is_paid_db = (int)($application['is_paid'] ?? 0);
+            $status_lc = strtolower((string)($application['status'] ?? ''));
+            if ($is_paid_db === 1) {
+                $initial_step = 5; // Disbursement completed (paid)
+            } elseif ($status_lc === 'approved') {
+                $initial_step = 4; // Disbursement
+            } elseif (in_array($status_lc, ['rejected', 'incomplete'], true)) {
+                $initial_step = 3; // Result
+            } else {
+                $initial_step = 2; // Under Review
+            }
+        }
+        if ($latest_renewal) {
+            $renewal_status_lc = strtolower((string)($latest_renewal['status'] ?? ''));
+            $renewal_paid_db = (int)($latest_renewal['is_paid'] ?? 0);
+            if ($renewal_status_lc === 'pending') {
+                $initial_step = 2; // Under Review
+            } elseif ($renewal_paid_db === 1) {
+                $initial_step = 5; // Disbursement completed (paid)
+            } elseif ($renewal_status_lc === 'approved') {
+                $initial_step = 4; // Disbursement
+            } elseif (in_array($renewal_status_lc, ['rejected', 'incomplete'], true)) {
                 $initial_step = 3; // Result
             }
         }
@@ -35,8 +67,80 @@ if ($user_id) {
     }
 }
 
+$is_paid = $application ? (int)($application['is_paid'] ?? 0) : 0;
+$renewal_status_lc = $latest_renewal ? strtolower((string)($latest_renewal['status'] ?? '')) : '';
+$has_pending_renewal = ($renewal_status_lc === 'pending');
+$has_incomplete_renewal = ($renewal_status_lc === 'incomplete');
+$renewal_paid = $latest_renewal ? (int)($latest_renewal['is_paid'] ?? 0) : 0;
+$current_cycle_paid = $latest_renewal ? $renewal_paid : $is_paid;
+$show_renewal_tab = ($application && !$has_pending_renewal && (
+    (!$latest_renewal && $is_paid === 1) ||
+    ($latest_renewal && $has_incomplete_renewal) ||
+    ($latest_renewal && !$has_incomplete_renewal && $renewal_paid === 1)
+));
+$renewal_form_record = $latest_renewal ? $latest_renewal : $application;
+$submitted_record = $application;
+$submitted_label = 'Submitted Form';
+$submitted_status_label = '';
+$submitted_status_color = '#ff9800';
+$is_submitted_renewal = false;
+$submitted_status_lc = '';
+if ($latest_renewal) {
+    $submitted_record = $latest_renewal;
+    $submitted_label = 'Submitted Renewal';
+    $is_submitted_renewal = true;
+}
+if ($submitted_record) {
+    $submitted_status_lc = strtolower((string)($submitted_record['status'] ?? ''));
+    if ($submitted_status_lc === 'pending') {
+        $submitted_status_label = 'Under Review';
+    } elseif ($submitted_status_lc === 'approved') {
+        $submitted_status_label = 'Accepted';
+    } elseif ($submitted_status_lc === 'rejected') {
+        $submitted_status_label = 'Rejected';
+    } elseif ($submitted_status_lc === 'incomplete') {
+        $submitted_status_label = 'Incomplete';
+    } else {
+        $submitted_status_label = $submitted_status_lc !== '' ? $submitted_status_lc : 'N/A';
+    }
+    if ($submitted_status_lc === 'approved') $submitted_status_color = '#2e7d32';
+    elseif ($submitted_status_lc === 'rejected') $submitted_status_color = '#d32f2f';
+}
+$watermark_title = '';
+$watermark_subtitle = '';
+if ($is_submitted_renewal && $submitted_record) {
+    $renewal_paid = (int)($submitted_record['is_paid'] ?? 0);
+    $renewal_status_lc = strtolower((string)($submitted_record['status'] ?? ''));
+    if ($renewal_paid === 1) {
+        $watermark_title = 'PAID';
+        $watermark_subtitle = 'RENEWAL';
+    } else {
+        $watermark_title = 'RENEWAL';
+        if ($renewal_status_lc === 'pending') {
+            $watermark_subtitle = 'UNDER REVIEW';
+        } elseif ($renewal_status_lc === 'approved') {
+            $watermark_subtitle = 'APPROVED';
+        } elseif ($renewal_status_lc === 'rejected') {
+            $watermark_subtitle = 'REJECTED';
+        } elseif ($renewal_status_lc === 'incomplete') {
+            $watermark_subtitle = 'INCOMPLETE';
+        } elseif ($renewal_status_lc !== '') {
+            $watermark_subtitle = strtoupper($renewal_status_lc);
+        }
+    }
+} elseif ($application) {
+    $status_lc = strtolower((string)($application['status'] ?? ''));
+    if ($is_paid === 1) {
+        $watermark_title = 'PAID';
+    } elseif ($status_lc === 'approved') {
+        $watermark_title = 'APPROVED';
+        $watermark_subtitle = 'FOR DISBURSEMENT';
+    }
+}
+
 // Helper function to format date
-function format_date($date_string) {
+function format_date($date_string)
+{
     if (empty($date_string)) return 'N/A';
     $date = new DateTime($date_string);
     return $date->format('F d, Y');
@@ -289,6 +393,43 @@ function format_date($date_string) {
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
         }
 
+        .submitted-panel-wrap {
+            position: relative;
+        }
+
+        .submitted-watermark {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .submitted-watermark .wm {
+            font-weight: 900;
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            color: rgba(41, 61, 130, 0.12);
+            transform: rotate(-18deg);
+            text-align: center;
+            line-height: 1;
+            font-size: 64px;
+        }
+
+        .submitted-watermark .wm small {
+            display: block;
+            margin-top: 10px;
+            font-size: 18px;
+            letter-spacing: 6px;
+        }
+
+        .submitted-panel-content {
+            position: relative;
+            z-index: 1;
+        }
+
         .submitted-card h3 {
             font-size: 1.05rem;
             margin-bottom: 14px;
@@ -403,6 +544,169 @@ function format_date($date_string) {
             display: block;
         }
 
+        .renewal-section-title {
+            margin-top: 18px;
+            margin-bottom: 10px;
+            font-weight: 800;
+            color: #293D82;
+        }
+
+        .renewal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .renewal-label {
+            display: block;
+            color: #666;
+            font-size: 0.86rem;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .renewal-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            background: #fff;
+            outline: none;
+        }
+
+        .renewal-sex {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid #e6e6e6;
+            background: #fafafa;
+        }
+
+        .renewal-sex .renewal-label {
+            margin: 0;
+        }
+
+        .renewal-sex-options {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .renewal-course {
+            grid-column: 1 / -1;
+        }
+
+        .scholarship-form-requirements {
+            margin-top: 12px;
+            display: flex;
+            gap: 24px;
+        }
+
+        .renewal-requirements {
+            margin-top: 8px;
+        }
+
+        .scholarship-form-req-content {
+            flex: 1;
+        }
+
+        .scholarship-form-req-list {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .scholarship-form-req-item {
+            background: #f0f7ff;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .scholarship-form-req-item-content {
+            flex: 1;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.92rem;
+        }
+
+        .scholarship-form-upload-box {
+            flex: 0 0 130px;
+            background: #fff;
+            border: 2px dashed #1e88e5;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scholarship-form-upload-box:hover {
+            background: #e3f2fd;
+            border-color: #293D82;
+        }
+
+        .scholarship-form-upload-box i {
+            font-size: 24px;
+            color: #1e88e5;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .scholarship-form-upload-box span {
+            font-size: 11px;
+            color: #1e88e5;
+            font-weight: 700;
+            display: block;
+        }
+
+        .scholarship-form-upload-box input {
+            display: none;
+        }
+
+        .scholarship-form-upload-box .upload-preview img {
+            width: 100%;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .scholarship-form-upload-box .upload-preview .file-name {
+            font-size: 12px;
+            color: #333;
+            margin-top: 6px;
+            display: block;
+            word-break: break-word;
+        }
+
+        @media (max-width: 900px) {
+            .renewal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .scholarship-form-req-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .scholarship-form-upload-box {
+                width: 100%;
+                flex: 0 0 auto;
+            }
+        }
+
         @media (max-width:600px) {
             .tab-buttons {
                 gap: 8px;
@@ -509,7 +813,7 @@ function format_date($date_string) {
             object-fit: contain;
             transition: transform 0.2s ease;
         }
-        
+
         .document-modal-body img.zoomed {
             cursor: grabbing;
         }
@@ -692,137 +996,338 @@ function format_date($date_string) {
                     <div class="tabs">
                         <div class="tab-buttons" role="tablist" aria-label="Application tabs">
                             <button class="tab-button" role="tab" aria-selected="true" data-target="panel-submitted" id="tab-submitted">Submitted Form</button>
-                            <button class="tab-button" role="tab" aria-selected="false" data-target="panel-renewal" id="tab-renewal">Renewal Form</button>
+                            <?php if ($show_renewal_tab): ?>
+                                <button class="tab-button" role="tab" aria-selected="false" data-target="panel-renewal" id="tab-renewal">Renewal Form</button>
+                            <?php endif; ?>
                         </div>
 
                         <div class="tab-panels">
                             <div id="panel-submitted" class="tab-panel active" role="tabpanel" aria-labelledby="tab-submitted">
-                                <h3>Submitted Form</h3>
-                                <?php if ($application): ?>
-                                <div class="form-grid">
-                                    <div class="col">
-                                        <label class="muted">Academic Level:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['academic_level'] ?? 'N/A'); ?> - <?php echo htmlspecialchars($application['semester'] ?? 'N/A'); ?></div>
-
-                                        <label class="muted">Name:</label>
-                                        <div class="value"><strong><?php echo htmlspecialchars($application['last_name'] ?? ''); ?>, <?php echo htmlspecialchars($application['first_name'] ?? ''); ?> <?php echo htmlspecialchars($application['middle_name'] ?? ''); ?></strong></div>
-
-                                        <label class="muted">Mother's Maiden Name:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['mothers_maiden_name'] ?? 'N/A'); ?></div>
-
-                                        <label class="muted">Father's Name:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['fathers_name'] ?? 'N/A'); ?></div>
-                                    </div>
-                                    <div class="col">
-                                        <label class="muted">Age:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['age'] ?? 'N/A'); ?></div>
-
-                                        <label class="muted">Date of Birth:</label>
-                                        <div class="value"><?php echo format_date($application['date_of_birth'] ?? ''); ?></div>
-
-                                        <label class="muted">Sex:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['sex'] ?? 'N/A'); ?></div>
-
-                                        <label class="muted">Cellphone No.:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['cellphone_number'] ?? 'N/A'); ?></div>
-                                    </div>
-                                    <div class="col address-col">
-                                        <label class="muted">Home Address:</label>
-                                        <div class="value"><?php echo htmlspecialchars($application['house_number'] ?? ''); ?> <?php echo htmlspecialchars($application['street_address'] ?? ''); ?> <?php echo htmlspecialchars($application['barangay'] ?? ''); ?> <?php echo htmlspecialchars($application['municipality'] ?? ''); ?></div>
-
-                                        <label class="muted">Submission Date:</label>
-                                        <div class="value"><?php echo format_date($application['submission_date'] ?? ''); ?></div>
-
-                                        <label class="muted">Status:</label>
-                                        <div class="value" style="text-transform: capitalize; color: <?php echo $application['status'] === 'approved' ? '#2e7d32' : ($application['status'] === 'rejected' ? '#d32f2f' : '#ff9800'); ?>;">
-                                            <strong><?php echo htmlspecialchars($application['status'] ?? 'N/A'); ?></strong>
+                                <div class="submitted-panel-wrap">
+                                    <?php if ($watermark_title !== ''): ?>
+                                        <div class="submitted-watermark">
+                                            <div class="wm">
+                                                <?php echo htmlspecialchars($watermark_title, ENT_QUOTES, 'UTF-8'); ?>
+                                                <?php if ($watermark_subtitle !== ''): ?>
+                                                    <small><?php echo htmlspecialchars($watermark_subtitle, ENT_QUOTES, 'UTF-8'); ?></small>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
-                                        <?php if (!empty($application['rejection_reason'])): ?>
-                                        <label class="muted">Reason for Rejection:</label>
-                                        <div class="value" style="color: #d32f2f; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($application['rejection_reason'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                    <?php endif; ?>
+                                    <div class="submitted-panel-content">
+                                        <h3><?php echo htmlspecialchars($submitted_label, ENT_QUOTES, 'UTF-8'); ?></h3>
+                                        <?php if ($submitted_record): ?>
+                                            <div class="form-grid">
+                                                <div class="col">
+                                                    <label class="muted">Academic Level:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['academic_level'] ?? 'N/A'); ?> - <?php echo htmlspecialchars($submitted_record['semester'] ?? 'N/A'); ?></div>
+
+                                                    <label class="muted">Name:</label>
+                                                    <div class="value"><strong><?php echo htmlspecialchars($submitted_record['last_name'] ?? ''); ?>, <?php echo htmlspecialchars($submitted_record['first_name'] ?? ''); ?> <?php echo htmlspecialchars($submitted_record['middle_name'] ?? ''); ?></strong></div>
+
+                                                    <label class="muted">Mother's Maiden Name:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['mothers_maiden_name'] ?? 'N/A'); ?></div>
+
+                                                    <label class="muted">Father's Name:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['fathers_name'] ?? 'N/A'); ?></div>
+                                                </div>
+                                                <div class="col">
+                                                    <label class="muted">Age:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['age'] ?? 'N/A'); ?></div>
+
+                                                    <label class="muted">Date of Birth:</label>
+                                                    <div class="value"><?php echo format_date($submitted_record['date_of_birth'] ?? ''); ?></div>
+
+                                                    <label class="muted">Sex:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['sex'] ?? 'N/A'); ?></div>
+
+                                                    <label class="muted">Cellphone No.:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['cellphone_number'] ?? 'N/A'); ?></div>
+                                                </div>
+                                                <div class="col address-col">
+                                                    <label class="muted">Home Address:</label>
+                                                    <div class="value"><?php echo htmlspecialchars($submitted_record['house_number'] ?? ''); ?> <?php echo htmlspecialchars($submitted_record['street_address'] ?? ''); ?> <?php echo htmlspecialchars($submitted_record['barangay'] ?? ''); ?> <?php echo htmlspecialchars($submitted_record['municipality'] ?? ''); ?></div>
+
+                                                    <label class="muted">Submission Date:</label>
+                                                    <div class="value"><?php echo format_date($submitted_record['submission_date'] ?? ''); ?></div>
+
+                                                    <label class="muted">Status:</label>
+                                                    <div class="value" style="text-transform: capitalize; color: <?php echo $submitted_status_color; ?>;">
+                                                        <strong><?php echo htmlspecialchars($submitted_status_label, ENT_QUOTES, 'UTF-8'); ?></strong>
+                                                    </div>
+                                                    <?php if ($submitted_status_lc === 'rejected' && !empty($submitted_record['rejection_reason'])): ?>
+                                                        <label class="muted">Reason for Rejection:</label>
+                                                        <div class="value" style="color: #d32f2f; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($submitted_record['rejection_reason'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                                    <?php elseif ($submitted_status_lc === 'incomplete' && !empty($submitted_record['incomplete_reason'])): ?>
+                                                        <label class="muted">Reason for Incomplete:</label>
+                                                        <div class="value" style="color: #ff8f00; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($submitted_record['incomplete_reason'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                                    <?php endif; ?>
+                                                    <?php if ($submitted_status_lc === 'incomplete' && !$is_submitted_renewal): ?>
+                                                        <div style="margin-top: 10px;">
+                                                            <a href="<?php echo htmlspecialchars(route_url('students/application'), ENT_QUOTES, 'UTF-8'); ?>" style="display: inline-block; background: #1e88e5; color: #fff; padding: 10px 14px; border-radius: 12px; text-decoration: none; font-weight: 600;">Edit Application</a>
+                                                        </div>
+                                                    <?php elseif ($submitted_status_lc === 'incomplete' && $is_submitted_renewal && $show_renewal_tab): ?>
+                                                        <div style="margin-top: 10px;">
+                                                            <button type="button" onclick="document.getElementById('tab-renewal') && document.getElementById('tab-renewal').click();" class="apply-btn" style="background:#1e88e5; color:white; margin: 0 auto;">Edit Renewal</button>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+
+                                            <div style="margin-top:18px;">
+                                                <label class="muted">Documents Submitted:</label>
+                                                <div class="docs-row">
+                                                    <?php
+                                                    $documents = [
+                                                        ['field' => 'cor_coe_file', 'title' => 'COR/COE', 'name' => 'Certificate of Registration'],
+                                                        ['field' => 'cert_grades_file', 'title' => 'Cert of Grades', 'name' => '2nd Semester Grades'],
+                                                        ['field' => 'barangay_indigency_file', 'title' => 'Barangay Indigency', 'name' => 'Barangay Indigency'],
+                                                        ['field' => 'voters_cert_file', 'title' => 'Voters Cert', 'name' => 'Voters Certification']
+                                                    ];
+
+                                                    foreach ($documents as $doc) {
+                                                        if (!empty($submitted_record[$doc['field']])) {
+                                                            $file_path = $submitted_record[$doc['field']];
+                                                            $full_url = '../' . htmlspecialchars($file_path);
+                                                            $is_image = preg_match('/\.(jpg|jpeg|png|gif)$/i', $file_path);
+                                                            echo '<div class="doc-placeholder" style="display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f0f7ff; border: 2px solid #1e88e5; transition: all 0.3s ease;" onclick="openDocumentModal(\'' . $full_url . '\', \'' . ($is_image ? 'image' : 'pdf') . '\', \'' . htmlspecialchars($doc['name']) . '\')" onmouseover="this.style.background=\'#e3f2fd\'; this.style.boxShadow=\'0 4px 12px rgba(30, 136, 229, 0.3)\';" onmouseout="this.style.background=\'#f0f7ff\'; this.style.boxShadow=\'inset 0 0 0 4px #ddd\'">';
+                                                            if ($is_image) {
+                                                                echo '<img src="' . $full_url . '" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" alt="' . htmlspecialchars($doc['name']) . '">';
+                                                            } else {
+                                                                echo '<i class="fas fa-file-pdf" style="color: #d32f2f; font-size: 32px;"></i>';
+                                                            }
+                                                            echo '</div>';
+                                                        } else {
+                                                            echo '<div class="doc-placeholder" style="background: #f5f5f5; display: flex; align-items: center; justify-content: center;"><span style="color: #999; font-size: 12px; text-align: center;">No file</span></div>';
+                                                        }
+                                                    }
+                                                    ?>
+                                                </div>
+                                            </div>
+
+                                        <?php else: ?>
+                                            <div style="text-align: center; padding: 40px; color: #999;">
+                                                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                                <p>No application submitted yet.</p>
+                                                <a href="<?php echo route_url('students/application'); ?>" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Submit your application</a>
+                                            </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-
-                                <div style="margin-top:18px;">
-                                    <label class="muted">Documents Submitted:</label>
-                                    <div class="docs-row">
-                                        <?php 
-                                        $documents = [
-                                            ['field' => 'cor_coe_file', 'title' => 'COR/COE', 'name' => 'Certificate of Registration'],
-                                            ['field' => 'cert_grades_file', 'title' => 'Cert of Grades', 'name' => '2nd Semester Grades'],
-                                            ['field' => 'barangay_indigency_file', 'title' => 'Barangay Indigency', 'name' => 'Barangay Indigency'],
-                                            ['field' => 'voters_cert_file', 'title' => 'Voters Cert', 'name' => 'Voters Certification']
-                                        ];
-                                        
-                                        foreach ($documents as $doc) {
-                                            if (!empty($application[$doc['field']])) {
-                                                $file_path = $application[$doc['field']];
-                                                $full_url = '../' . htmlspecialchars($file_path);
-                                                $is_image = preg_match('/\.(jpg|jpeg|png|gif)$/i', $file_path);
-                                                echo '<div class="doc-placeholder" style="display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f0f7ff; border: 2px solid #1e88e5; transition: all 0.3s ease;" onclick="openDocumentModal(\'' . $full_url . '\', \'' . ($is_image ? 'image' : 'pdf') . '\', \'' . htmlspecialchars($doc['name']) . '\')" onmouseover="this.style.background=\'#e3f2fd\'; this.style.boxShadow=\'0 4px 12px rgba(30, 136, 229, 0.3)\';" onmouseout="this.style.background=\'#f0f7ff\'; this.style.boxShadow=\'inset 0 0 0 4px #ddd\'">';
-                                                if ($is_image) {
-                                                    echo '<img src="' . $full_url . '" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" alt="' . htmlspecialchars($doc['name']) . '">';
-                                                } else {
-                                                    echo '<i class="fas fa-file-pdf" style="color: #d32f2f; font-size: 32px;"></i>';
-                                                }
-                                                echo '</div>';
-                                            } else {
-                                                echo '<div class="doc-placeholder" style="background: #f5f5f5; display: flex; align-items: center; justify-content: center;"><span style="color: #999; font-size: 12px; text-align: center;">No file</span></div>';
-                                            }
-                                        }
-                                        ?>
-                                    </div>
-                                </div>
-
-                                <?php else: ?>
-                                <div style="text-align: center; padding: 40px; color: #999;">
-                                    <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                                    <p>No application submitted yet.</p>
-                                    <a href="<?php echo route_url('students/application'); ?>" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Submit your application</a>
-                                </div>
-                                <?php endif; ?>
-
                             </div>
 
-                            <div id="panel-renewal" class="tab-panel" role="tabpanel" aria-labelledby="tab-renewal">
-                                <h3>Renewal Form</h3>
-                                <?php if ($application): ?>
-                                <form id="renewalForm">
-                                    <div class="form-grid">
-                                        <div class="col">
-                                            <label class="muted">Name:</label>
-                                            <div class="value"><?php echo htmlspecialchars($application['last_name'] ?? ''); ?>, <?php echo htmlspecialchars($application['first_name'] ?? ''); ?> <?php echo htmlspecialchars($application['middle_name'] ?? ''); ?></div>
-
-                                            <label class="muted">Course / Year:</label>
-                                            <input type="text" name="course" placeholder="e.g., BS Computer Science - 2nd Year" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;">
-
+                            <?php if ($show_renewal_tab): ?>
+                                <div id="panel-renewal" class="tab-panel" role="tabpanel" aria-labelledby="tab-renewal">
+                                    <h3>Renewal Form</h3>
+                                    <?php if (!$application): ?>
+                                        <div style="text-align: center; padding: 40px; color: #999;">
+                                            <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                            <p>Renewal form is only available after submitting your initial application.</p>
+                                            <a href="<?php echo route_url('students/application'); ?>" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Submit your application</a>
                                         </div>
-                                        <div class="col">
-                                            <label class="muted">Contact No.:</label>
-                                            <input type="text" name="contact" placeholder="09012345678" value="<?php echo htmlspecialchars($application['cellphone_number'] ?? ''); ?>" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;">
-
-                                            <label class="muted">Upload Grades (optional):</label>
-                                            <input type="file" name="grades" style="margin-top:6px;">
+                                    <?php elseif ($is_paid !== 1): ?>
+                                        <div style="text-align: center; padding: 40px; color: #999;">
+                                            <i class="fas fa-wallet" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                            <p>Renewal form will be available after your current application is marked as paid.</p>
                                         </div>
-                                        <div class="col address-col">
-                                            <label class="muted">Home Address:</label>
-                                            <textarea name="address" rows="4" style="width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ddd;"><?php echo htmlspecialchars($application['house_number'] ?? ''); ?> <?php echo htmlspecialchars($application['street_address'] ?? ''); ?> <?php echo htmlspecialchars($application['barangay'] ?? ''); ?> <?php echo htmlspecialchars($application['municipality'] ?? ''); ?></textarea>
+                                    <?php elseif ($latest_renewal && strtolower((string)($latest_renewal['status'] ?? '')) === 'pending'): ?>
+                                        <div style="text-align: center; padding: 40px; color: #999;">
+                                            <i class="fas fa-hourglass-half" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                            <p>Your renewal has been submitted and is currently under review.</p>
+                                            <div style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                                                Submitted on: <?php echo format_date($latest_renewal['submission_date'] ?? ''); ?>
+                                            </div>
                                         </div>
-                                    </div>
+                                    <?php else: ?>
+                                        <form id="renewalForm" method="POST" action="<?php echo htmlspecialchars(route_url('students/process-renewal'), ENT_QUOTES); ?>" enctype="multipart/form-data">
+                                            <?php echo csrf_input(); ?>
+                                            <div class="renewal-section-title">Personal Information</div>
+                                            <div class="renewal-grid">
+                                                <div>
+                                                    <label class="renewal-label">Academic Level</label>
+                                                    <select name="academic_level" class="renewal-input" required>
+                                                        <option value="">-- Select Academic Level --</option>
+                                                        <option value="1st Year" <?php echo (($renewal_form_record['academic_level'] ?? '') === '1st Year') ? 'selected' : ''; ?>>1st Year</option>
+                                                        <option value="2nd Year" <?php echo (($renewal_form_record['academic_level'] ?? '') === '2nd Year') ? 'selected' : ''; ?>>2nd Year</option>
+                                                        <option value="3rd Year" <?php echo (($renewal_form_record['academic_level'] ?? '') === '3rd Year') ? 'selected' : ''; ?>>3rd Year</option>
+                                                        <option value="4th Year" <?php echo (($renewal_form_record['academic_level'] ?? '') === '4th Year') ? 'selected' : ''; ?>>4th Year</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Semester</label>
+                                                    <input type="text" name="semester" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['semester'] ?? ''); ?>" required>
+                                                </div>
 
-                                    <div style="text-align:center; margin-top:14px;">
-                                        <button type="submit" class="apply-btn" style="background:#ff6fb2; color:white;">Submit Renewal</button>
-                                    </div>
-                                </form>
-                                <?php else: ?>
-                                <div style="text-align: center; padding: 40px; color: #999;">
-                                    <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
-                                    <p>Renewal form is only available after submitting your initial application.</p>
-                                    <a href="<?php echo route_url('students/application'); ?>" style="color: #1e88e5; text-decoration: none; font-weight: 600;">Submit your application</a>
+                                                <div>
+                                                    <label class="renewal-label">First Name</label>
+                                                    <input type="text" name="first_name" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['first_name'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Last Name</label>
+                                                    <input type="text" name="last_name" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['last_name'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Middle Name</label>
+                                                    <input type="text" name="middle_name" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['middle_name'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Date of Birth</label>
+                                                    <input type="date" name="date_of_birth" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['date_of_birth'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Age</label>
+                                                    <input type="text" name="age" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['age'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Cellphone Number</label>
+                                                    <input type="text" name="cellphone_number" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['cellphone_number'] ?? ''); ?>" required>
+                                                </div>
+
+                                                <div class="renewal-sex">
+                                                    <label class="renewal-label">Sex</label>
+                                                    <div class="renewal-sex-options">
+                                                        <input type="radio" id="renewal_male" name="sex" value="Male" <?php echo (strcasecmp(($renewal_form_record['sex'] ?? ''), 'Male') === 0) ? 'checked' : ''; ?>>
+                                                        <label for="renewal_male">Male</label>
+                                                        <input type="radio" id="renewal_female" name="sex" value="Female" <?php echo (strcasecmp(($renewal_form_record['sex'] ?? ''), 'Female') === 0) ? 'checked' : ''; ?>>
+                                                        <label for="renewal_female">Female</label>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="renewal-label">Mother's Maiden Name</label>
+                                                    <input type="text" name="mothers_maiden_name" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['mothers_maiden_name'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Mother's Occupation</label>
+                                                    <input type="text" name="mothers_occupation" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['mothers_occupation'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Father's Name</label>
+                                                    <input type="text" name="fathers_name" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['fathers_name'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Father's Occupation</label>
+                                                    <input type="text" name="fathers_occupation" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['fathers_occupation'] ?? ''); ?>" required>
+                                                </div>
+
+                                                <div>
+                                                    <label class="renewal-label">Street Address</label>
+                                                    <input type="text" name="street_address" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['street_address'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">House no./Bldg no.</label>
+                                                    <input type="text" name="house_number" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['house_number'] ?? ''); ?>" required>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Barangay</label>
+                                                    <select name="barangay" class="renewal-input" required>
+                                                        <option value="">-- Select Barangay --</option>
+                                                        <?php
+                                                        $barangay_value = (string)($renewal_form_record['barangay'] ?? '');
+                                                        $barangay_options = [
+                                                            'San Agustin',
+                                                            'San Carlos',
+                                                            'San Isidro',
+                                                            'San Jose',
+                                                            'San Juan',
+                                                            'San Nicolas',
+                                                            'San Roque',
+                                                            'San Sebastian',
+                                                            'Santa Catalina',
+                                                            'Santa Cruz Pambilog',
+                                                            'Santa Cruz Poblacion',
+                                                            'Santa Lucia',
+                                                            'Santa Monica',
+                                                            'Santa Rita',
+                                                            'Santo Niño',
+                                                            'Santo Rosario',
+                                                            'Santo Tomas'
+                                                        ];
+                                                        foreach ($barangay_options as $opt) {
+                                                            $selected = ($barangay_value === $opt) ? 'selected' : '';
+                                                            echo '<option value="' . htmlspecialchars($opt) . '" ' . $selected . '>' . htmlspecialchars($opt) . '</option>';
+                                                        }
+                                                        ?>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="renewal-label">Municipality</label>
+                                                    <input type="text" name="municipality" class="renewal-input" value="<?php echo htmlspecialchars($renewal_form_record['municipality'] ?? 'San Luis'); ?>">
+                                                </div>
+
+                                                <div class="renewal-course">
+                                                    <label class="renewal-label">Course / Year</label>
+                                                    <input type="text" name="course_year" class="renewal-input" placeholder="e.g., BS Computer Science - 2nd Year">
+                                                </div>
+                                            </div>
+
+                                            <div class="renewal-section-title">Requirements</div>
+                                            <div class="scholarship-form-requirements renewal-requirements">
+                                                <div class="scholarship-form-req-content">
+                                                    <div class="scholarship-form-req-list">
+                                                        <div class="scholarship-form-req-item">
+                                                            <label class="scholarship-form-upload-box">
+                                                                <div class="upload-preview">
+                                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                                    <span>Upload</span>
+                                                                </div>
+                                                                <input type="file" name="cor_coe_file" accept="image/*,.pdf" <?php echo $has_incomplete_renewal ? '' : 'required'; ?>>
+                                                            </label>
+                                                            <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                                            <div class="scholarship-form-req-item-content">
+                                                                <span>Certificate of Registration (COR) / Certificate of Enrollment (COE) / Assessment Form 1st Semester</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="scholarship-form-req-item">
+                                                            <label class="scholarship-form-upload-box">
+                                                                <div class="upload-preview">
+                                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                                    <span>Upload</span>
+                                                                </div>
+                                                                <input type="file" name="cert_grades_file" accept="image/*,.pdf" <?php echo $has_incomplete_renewal ? '' : 'required'; ?>>
+                                                            </label>
+                                                            <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                                            <div class="scholarship-form-req-item-content">
+                                                                <span>2nd Semester Certificate of Grades</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="scholarship-form-req-item">
+                                                            <label class="scholarship-form-upload-box">
+                                                                <div class="upload-preview">
+                                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                                    <span>Upload</span>
+                                                                </div>
+                                                                <input type="file" name="barangay_indigency_file" accept="image/*,.pdf" <?php echo $has_incomplete_renewal ? '' : 'required'; ?>>
+                                                            </label>
+                                                            <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                                            <div class="scholarship-form-req-item-content">
+                                                                <span>Original Barangay Indigency of Student</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="scholarship-form-req-item">
+                                                            <label class="scholarship-form-upload-box">
+                                                                <div class="upload-preview">
+                                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                                    <span>Upload</span>
+                                                                </div>
+                                                                <input type="file" name="voters_cert_file" accept="image/*,.pdf" <?php echo $has_incomplete_renewal ? '' : 'required'; ?>>
+                                                            </label>
+                                                            <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
+                                                            <div class="scholarship-form-req-item-content">
+                                                                <span>Voters Certification</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div style="text-align:center; margin-top:14px;">
+                                                <button type="submit" class="apply-btn" style="background:#ff6fb2; color:white;">Submit Renewal</button>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
                                 </div>
-                                <?php endif; ?>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -863,12 +1368,63 @@ function format_date($date_string) {
             }
         } catch (e) {}
 
-        // handle renewal form submission (demo)
         const renewalForm = document.getElementById('renewalForm');
+
+        function bindUploadPreviews(formEl) {
+            const uploadInputs = formEl.querySelectorAll('.scholarship-form-upload-box input[type="file"]');
+            uploadInputs.forEach(input => {
+                const label = input.closest('.scholarship-form-upload-box');
+                const preview = label ? label.querySelector('.upload-preview') : null;
+                if (!preview) return;
+
+                input.addEventListener('change', function() {
+                    const file = this.files && this.files[0];
+                    if (!file) {
+                        preview.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><span>Upload</span>';
+                        return;
+                    }
+
+                    if (file.type && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.innerHTML = '<img src="' + e.target.result + '" alt="preview"><div class="file-name">' + file.name + '</div>';
+                        };
+                        reader.readAsDataURL(file);
+                        return;
+                    }
+
+                    preview.innerHTML = '<div class="file-name">' + file.name + '</div>';
+                });
+            });
+        }
+
         if (renewalForm) {
+            bindUploadPreviews(renewalForm);
             renewalForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                alert('Renewal form submitted (demo).');
+
+                if (!renewalForm.checkValidity()) {
+                    renewalForm.reportValidity();
+                    return;
+                }
+
+                const sexRadios = renewalForm.querySelectorAll('input[name="sex"]');
+                const sexSelected = Array.from(sexRadios).some(radio => radio.checked);
+                if (!sexSelected) {
+                    alert('Please select your sex.');
+                    return;
+                }
+
+                const requiredFiles = <?php echo $has_incomplete_renewal ? '[]' : "['cor_coe_file', 'cert_grades_file', 'barangay_indigency_file', 'voters_cert_file']"; ?>;
+                for (const fieldName of requiredFiles) {
+                    const fileInput = renewalForm.querySelector('input[type="file"][name="' + fieldName + '"]');
+                    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                        alert('Please upload all required documents before submitting.');
+                        return;
+                    }
+                }
+
+                renewalForm.submit();
             });
         }
 
@@ -887,14 +1443,16 @@ function format_date($date_string) {
             const progressFill = document.getElementById('progressFill');
 
             // Calculate progress percentage
-            const progressPercent = ((currentStep - 1) / (steps.length - 1)) * 100;
+            const progressPercent = Math.min(100, Math.max(0, ((currentStep - 1) / (steps.length - 1)) * 100));
             progressFill.style.width = progressPercent + '%';
 
             // Update step states
             steps.forEach((step, index) => {
                 step.classList.remove('completed', 'active', 'pending');
 
-                if (index < currentStep - 1) {
+                if (currentStep > steps.length) {
+                    step.classList.add('completed');
+                } else if (index < currentStep - 1) {
                     step.classList.add('completed');
                 } else if (index === currentStep - 1) {
                     step.classList.add('active');
@@ -953,7 +1511,8 @@ function format_date($date_string) {
 
         // Image drag functionality
         let isDragging = false;
-        let startX, startY, translateX = 0, translateY = 0;
+        let startX, startY, translateX = 0,
+            translateY = 0;
 
         function startDrag(e) {
             const img = document.querySelector('.document-modal-body img');
@@ -981,7 +1540,7 @@ function format_date($date_string) {
                 img.style.cursor = 'grab';
             }
         }
-        
+
         function openDocumentModal(url, type, title) {
             const modal = document.getElementById('documentModal');
             const modalBody = document.getElementById('documentBody');

@@ -8,17 +8,24 @@ enforce_student_profile_completed($conn);
 
 // Check if user already has an existing application
 $user_id = auth_user_id();
+$editing = false;
+$edit_application = null;
 if ($user_id) {
     try {
         $pdo = get_db_connection();
-        $stmt = $pdo->prepare("SELECT id FROM scholarship_applications WHERE user_id = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT * FROM scholarship_applications WHERE user_id = ? ORDER BY submission_date DESC LIMIT 1");
         $stmt->execute([$user_id]);
-        $existing_application = $stmt->fetch();
-        
+        $existing_application = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if ($existing_application) {
-            // User already has an application, redirect to my_application
-            header('Location: ' . route_url('students/my_application'));
-            exit;
+            $status_lc = strtolower((string)($existing_application['status'] ?? ''));
+            if ($status_lc === 'incomplete') {
+                $editing = true;
+                $edit_application = $existing_application;
+            } else {
+                header('Location: ' . route_url('students/my-application'));
+                exit;
+            }
         }
     } catch (Exception $e) {
         error_log('Error checking existing application: ' . $e->getMessage());
@@ -448,6 +455,7 @@ if ($user_id) {
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -497,9 +505,17 @@ if ($user_id) {
     <section id="application-form-section" class="scholarship-form-section">
         <div class="scholarship-form-container">
             <h2 class="scholarship-form-title">SCHOLARSHIP APPLICATION FORM</h2>
+            <?php if ($editing && $edit_application): ?>
+                <div style="margin: 16px 0; padding: 14px 16px; border-radius: 12px; background: #fff8e1; border: 1px solid #ffe0b2; color: #5d4037;">
+                    <strong>Incomplete application:</strong> You can update your details and re-submit for review.
+                    <?php if (!empty($edit_application['incomplete_reason'])): ?>
+                        <div style="margin-top: 8px; white-space: pre-wrap;"><?php echo nl2br(htmlspecialchars($edit_application['incomplete_reason'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
             <form class="scholarship-form-form" method="POST" action="<?php echo htmlspecialchars(route_url('students/process-application'), ENT_QUOTES); ?>" enctype="multipart/form-data">
                 <?php echo csrf_input(); ?>
-                
+
                 <!-- Page 1: Personal Information -->
                 <div class="form-page" id="page1" style="display: block;">
                     <div class="scholarship-form-grid">
@@ -507,61 +523,61 @@ if ($user_id) {
                             <label class="scholarship-form-label">Academic Level</label>
                             <select name="academic_level" class="scholarship-form-select" required>
                                 <option value="">-- Select Academic Level --</option>
-                                <option value="1st Year">1st Year</option>
-                                <option value="2nd Year">2nd Year</option>
-                                <option value="3rd Year">3rd Year</option>
-                                <option value="4th Year">4th Year</option>
+                                <option value="1st Year" <?php echo ($editing && (($edit_application['academic_level'] ?? '') === '1st Year')) ? 'selected' : ''; ?>>1st Year</option>
+                                <option value="2nd Year" <?php echo ($editing && (($edit_application['academic_level'] ?? '') === '2nd Year')) ? 'selected' : ''; ?>>2nd Year</option>
+                                <option value="3rd Year" <?php echo ($editing && (($edit_application['academic_level'] ?? '') === '3rd Year')) ? 'selected' : ''; ?>>3rd Year</option>
+                                <option value="4th Year" <?php echo ($editing && (($edit_application['academic_level'] ?? '') === '4th Year')) ? 'selected' : ''; ?>>4th Year</option>
                             </select>
                         </div>
                         <div>
                             <label class="scholarship-form-label">Semester</label>
-                            <input type="text" name="semester" placeholder="Semester" class="scholarship-form-input" required />
+                            <input type="text" name="semester" placeholder="Semester" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['semester'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
                         </div>
-                        <input type="text" name="first_name" placeholder="First Name" class="scholarship-form-input" required />
-                        <input type="text" name="last_name" placeholder="Last Name" class="scholarship-form-input" required />
-                        <input type="text" name="middle_name" placeholder="Middle Name" class="scholarship-form-input" required />
-                        <input type="date" name="date_of_birth" placeholder="dd/mm/yyyy" class="scholarship-form-input" required />
-                        <input type="text" name="age" placeholder="Age" class="scholarship-form-input" required />
-                        <input type="text" name="cellphone_number" placeholder="Cellphone Number" class="scholarship-form-input" required />
+                        <input type="text" name="first_name" placeholder="First Name" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['first_name'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="last_name" placeholder="Last Name" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['last_name'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="middle_name" placeholder="Middle Name" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['middle_name'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="date" name="date_of_birth" placeholder="dd/mm/yyyy" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['date_of_birth'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="age" placeholder="Age" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['age'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="cellphone_number" placeholder="Cellphone Number" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['cellphone_number'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
                         <div class="scholarship-form-radio-group">
                             <label class="scholarship-form-label">Sex</label>
-                            <input type="radio" id="male" name="sex" value="Male" class="scholarship-form-radio" /> <label for="male" class="scholarship-form-radio-label">Male</label>
-                            <input type="radio" id="female" name="sex" value="Female" class="scholarship-form-radio" /> <label for="female" class="scholarship-form-radio-label">Female</label>
+                            <input type="radio" id="male" name="sex" value="Male" class="scholarship-form-radio" <?php echo ($editing && (($edit_application['sex'] ?? '') === 'Male')) ? 'checked' : ''; ?> /> <label for="male" class="scholarship-form-radio-label">Male</label>
+                            <input type="radio" id="female" name="sex" value="Female" class="scholarship-form-radio" <?php echo ($editing && (($edit_application['sex'] ?? '') === 'Female')) ? 'checked' : ''; ?> /> <label for="female" class="scholarship-form-radio-label">Female</label>
                         </div>
-                        <input type="text" name="mothers_maiden_name" placeholder="Mother's Maiden Name" class="scholarship-form-input" required />
-                        <input type="text" name="mothers_occupation" placeholder="Occupation" class="scholarship-form-input" required />
-                        <input type="text" name="fathers_name" placeholder="Father's Name" class="scholarship-form-input" required />
-                        <input type="text" name="fathers_occupation" placeholder="Occupation" class="scholarship-form-input" required />
-                        <input type="text" name="street_address" placeholder="Street Address" class="scholarship-form-input" required />
-                        <input type="text" name="house_number" placeholder="House no./Bldg no." class="scholarship-form-input" required />
+                        <input type="text" name="mothers_maiden_name" placeholder="Mother's Maiden Name" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['mothers_maiden_name'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="mothers_occupation" placeholder="Occupation" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['mothers_occupation'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="fathers_name" placeholder="Father's Name" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['fathers_name'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="fathers_occupation" placeholder="Occupation" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['fathers_occupation'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="street_address" placeholder="Street Address" class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['street_address'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
+                        <input type="text" name="house_number" placeholder="House no./Bldg no." class="scholarship-form-input" value="<?php echo htmlspecialchars($editing ? ($edit_application['house_number'] ?? '') : '', ENT_QUOTES, 'UTF-8'); ?>" required />
                         <div>
                             <label class="scholarship-form-label">Barangay</label>
                             <select name="barangay" class="scholarship-form-select" required>
                                 <option value="">-- Select Barangay --</option>
-                                <option>San Agustin</option>
-                                <option>San Carlos</option>
-                                <option>San Isidro</option>
-                                <option>San Jose</option>
-                                <option>San Juan</option>
-                                <option>San Nicolas</option>
-                                <option>San Roque</option>
-                                <option>San Sebastian</option>
-                                <option>Santa Catalina</option>
-                                <option>Santa Cruz Pambilog</option>
-                                <option>Santa Cruz Poblacion</option>
-                                <option>Santa Lucia</option>
-                                <option>Santa Monica</option>
-                                <option>Santa Rita</option>
-                                <option>Santo Niño</option>
-                                <option>Santo Rosario</option>
-                                <option>Santo Tomas</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Agustin')) ? 'selected' : ''; ?>>San Agustin</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Carlos')) ? 'selected' : ''; ?>>San Carlos</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Isidro')) ? 'selected' : ''; ?>>San Isidro</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Jose')) ? 'selected' : ''; ?>>San Jose</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Juan')) ? 'selected' : ''; ?>>San Juan</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Nicolas')) ? 'selected' : ''; ?>>San Nicolas</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Roque')) ? 'selected' : ''; ?>>San Roque</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'San Sebastian')) ? 'selected' : ''; ?>>San Sebastian</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santa Catalina')) ? 'selected' : ''; ?>>Santa Catalina</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santa Cruz Pambilog')) ? 'selected' : ''; ?>>Santa Cruz Pambilog</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santa Cruz Poblacion')) ? 'selected' : ''; ?>>Santa Cruz Poblacion</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santa Lucia')) ? 'selected' : ''; ?>>Santa Lucia</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santa Monica')) ? 'selected' : ''; ?>>Santa Monica</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santa Rita')) ? 'selected' : ''; ?>>Santa Rita</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santo Niño')) ? 'selected' : ''; ?>>Santo Niño</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santo Rosario')) ? 'selected' : ''; ?>>Santo Rosario</option>
+                                <option <?php echo ($editing && (($edit_application['barangay'] ?? '') === 'Santo Tomas')) ? 'selected' : ''; ?>>Santo Tomas</option>
                             </select>
                         </div>
                         <div>
                             <label class="scholarship-form-label">Municipality</label>
                             <input type="text" name="municipality" class="scholarship-form-input" value="San Luis" readonly />
                         </div>
-                        
+
                     </div>
                     <div class="scholarship-form-submit" style="margin-top: 32px;">
                         <button type="button" class="scholarship-form-btn" id="nextBtn" style="background: #1e88e5;">Next</button>
@@ -580,7 +596,7 @@ if ($user_id) {
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" name="cor_coe_file" accept="image/*,.pdf" required>
+                                        <input type="file" name="cor_coe_file" accept="image/*,.pdf" <?php echo $editing ? '' : 'required'; ?>>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -593,7 +609,7 @@ if ($user_id) {
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" name="cert_grades_file" accept="image/*,.pdf" required>
+                                        <input type="file" name="cert_grades_file" accept="image/*,.pdf" <?php echo $editing ? '' : 'required'; ?>>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -606,7 +622,7 @@ if ($user_id) {
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" name="barangay_indigency_file" accept="image/*,.pdf" required>
+                                        <input type="file" name="barangay_indigency_file" accept="image/*,.pdf" <?php echo $editing ? '' : 'required'; ?>>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -619,7 +635,7 @@ if ($user_id) {
                                             <i class="fas fa-cloud-upload-alt"></i>
                                             <span>Upload</span>
                                         </div>
-                                        <input type="file" name="voters_cert_file" accept="image/*,.pdf" required>
+                                        <input type="file" name="voters_cert_file" accept="image/*,.pdf" <?php echo $editing ? '' : 'required'; ?>>
                                     </label>
                                     <i class="fas fa-file-alt" style="font-size:20px;color:#1e88e5;"></i>
                                     <div class="scholarship-form-req-item-content">
@@ -652,39 +668,39 @@ if ($user_id) {
             const criteriaOverlay = document.getElementById('criteriaOverlay');
             const acknowledgeCriteria = document.getElementById('acknowledgeCriteria');
 
-            function openCriteriaModal(){
-                if(criteriaModal){
+            function openCriteriaModal() {
+                if (criteriaModal) {
                     criteriaModal.classList.add('active');
                     document.body.style.overflow = 'hidden';
                 }
             }
 
-            function closeCriteriaModal(){
-                if(criteriaModal){
+            function closeCriteriaModal() {
+                if (criteriaModal) {
                     criteriaModal.classList.remove('active');
                     document.body.style.overflow = '';
                 }
             }
 
-            function showPage2(){
+            function showPage2() {
                 page1.style.display = 'none';
                 page2.style.display = 'block';
                 window.scrollTo(0, 0);
                 openCriteriaModal();
             }
 
-            if(nextBtn) {
+            if (nextBtn) {
                 nextBtn.addEventListener('click', function() {
                     // Validate page 1 form
                     const form = document.querySelector('.scholarship-form-form');
                     let isValid = true;
-                    
+
                     // Clear previous error states
                     const allInputs = form.querySelectorAll('input[type="text"], input[type="date"], select');
                     allInputs.forEach(input => {
                         input.classList.remove('error');
                     });
-                    
+
                     // Check required fields and add error class
                     allInputs.forEach(input => {
                         if (!input.value.trim()) {
@@ -692,12 +708,12 @@ if ($user_id) {
                             isValid = false;
                         }
                     });
-                    
+
                     if (!isValid) {
                         alert('Please fill in all required fields.');
                         return;
                     }
-                    
+
                     // Check if sex is selected
                     const sexRadios = document.querySelectorAll('input[name="sex"]');
                     const sexSelected = Array.from(sexRadios).some(radio => radio.checked);
@@ -705,7 +721,7 @@ if ($user_id) {
                         alert('Please select your sex.');
                         return;
                     }
-                    
+
                     showPage2();
                 });
             }
@@ -725,19 +741,19 @@ if ($user_id) {
                 });
             });
 
-            if(acknowledgeCriteria) {
+            if (acknowledgeCriteria) {
                 acknowledgeCriteria.addEventListener('click', function() {
                     closeCriteriaModal();
                 });
             }
 
-            if(criteriaOverlay) {
+            if (criteriaOverlay) {
                 criteriaOverlay.addEventListener('click', function() {
                     closeCriteriaModal();
                 });
             }
 
-            if(prevBtn) {
+            if (prevBtn) {
                 prevBtn.addEventListener('click', function() {
                     page2.style.display = 'none';
                     page1.style.display = 'block';
@@ -771,8 +787,8 @@ if ($user_id) {
             });
 
             // Escape key handler for criteria modal
-            document.addEventListener('keydown', function(e){
-                if(e.key === 'Escape' && criteriaModal && criteriaModal.classList.contains('active')){
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && criteriaModal && criteriaModal.classList.contains('active')) {
                     closeCriteriaModal();
                 }
             });
@@ -780,29 +796,29 @@ if ($user_id) {
             // Continue button - submit form
             const continueBtn = document.getElementById('continueBtn');
             const form = document.querySelector('.scholarship-form-form');
-            if(continueBtn && form) {
+            if (continueBtn && form) {
                 continueBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
+
                     // Validate all required files are uploaded
                     const requiredFiles = ['cor_coe_file', 'cert_grades_file', 'barangay_indigency_file', 'voters_cert_file'];
                     let allFilesUploaded = true;
-                    
+
                     requiredFiles.forEach(fieldName => {
                         const fileInput = form.querySelector(`input[name="${fieldName}"]`);
                         if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                             allFilesUploaded = false;
                         }
                     });
-                    
+
                     if (!allFilesUploaded) {
                         alert('Please upload all required documents before submitting.');
                         return;
                     }
-                    
+
                     // Show confirmation before submit
                     const confirmModal = document.getElementById('confirmModal');
-                    if(confirmModal) {
+                    if (confirmModal) {
                         confirmModal.classList.add('active');
                         document.body.style.overflow = 'hidden';
                     }
@@ -814,78 +830,79 @@ if ($user_id) {
     <?php include 'includes/footer.php'; ?>
     <script src="includes/script.js"></script>
 
-<!-- Document Criteria Modal -->
-<div id="criteriaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="criteriaTitle">
-    <div id="criteriaOverlay" class="modal-overlay"></div>
-    <div class="modal-content" style="max-width: 600px; font-size: 14px;">
-        <h2 id="criteriaTitle" style="margin: 0 0 16px; font-size: 22px; color: #293D82;">Criteria is for Document uploading</h2>
-        <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #ff3fa4;">
-            <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                <li>Make sure the contents are visible</li>
-                <li>Make sure its authentic</li>
-                <li>Make sure it is original copy</li>
-                <li>Xerox copy is invalid</li>
-                <li>Make sure the official seals of school/barangay/institute are visible</li>
-                <li>Make sure the signature are visible</li>
-            </ul>
-        </div>
-        <div style="display:flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
-            <button type="button" class="scholarship-form-btn" id="acknowledgeCriteria" style="background:#1e88e5; padding: 10px 30px;">I Understand</button>
-        </div>
-    </div>
-</div>
-
-<!-- Confirmation Modal -->
-<div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-    <div id="confirmOverlay" class="modal-overlay"></div>
-    <div class="modal-content" style="max-width: 520px; font-size: 14px;">
-        <h2 id="confirmTitle" style="margin: 0 0 12px; font-size: 24px;">Submit Application?</h2>
-        <p style="color:#555; margin-bottom: 18px;">Are you sure you want to submit your scholarship application? Please review your information before submitting.</p>
-        <div style="display:flex; gap: 12px; justify-content: flex-end;">
-            <button type="button" class="close-btn" id="cancelConfirm">Cancel</button>
-            <button type="button" class="apply-btn" id="proceedConfirm" style="background:#293D82; color:#fff;">Submit</button>
+    <!-- Document Criteria Modal -->
+    <div id="criteriaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="criteriaTitle">
+        <div id="criteriaOverlay" class="modal-overlay"></div>
+        <div class="modal-content" style="max-width: 600px; font-size: 14px;">
+            <h2 id="criteriaTitle" style="margin: 0 0 16px; font-size: 22px; color: #293D82;">Criteria is for Document uploading</h2>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #ff3fa4;">
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                    <li>Make sure the contents are visible</li>
+                    <li>Make sure its authentic</li>
+                    <li>Make sure it is original copy</li>
+                    <li>Xerox copy is invalid</li>
+                    <li>Make sure the official seals of school/barangay/institute are visible</li>
+                    <li>Make sure the signature are visible</li>
+                </ul>
+            </div>
+            <div style="display:flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="scholarship-form-btn" id="acknowledgeCriteria" style="background:#1e88e5; padding: 10px 30px;">I Understand</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-// Confirmation modal behavior for submission
-(function() {
-    const confirmModal = document.getElementById('confirmModal');
-    const cancelConfirmBtn = document.getElementById('cancelConfirm');
-    const proceedConfirmBtn = document.getElementById('proceedConfirm');
-    const confirmOverlay = document.getElementById('confirmOverlay');
-    const form = document.querySelector('.scholarship-form-form');
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div id="confirmOverlay" class="modal-overlay"></div>
+        <div class="modal-content" style="max-width: 520px; font-size: 14px;">
+            <h2 id="confirmTitle" style="margin: 0 0 12px; font-size: 24px;">Submit Application?</h2>
+            <p style="color:#555; margin-bottom: 18px;">Are you sure you want to submit your scholarship application? Please review your information before submitting.</p>
+            <div style="display:flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="close-btn" id="cancelConfirm">Cancel</button>
+                <button type="button" class="apply-btn" id="proceedConfirm" style="background:#293D82; color:#fff;">Submit</button>
+            </div>
+        </div>
+    </div>
 
-    function closeConfirmModal(){
-        if(confirmModal){
-            confirmModal.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-    }
+    <script>
+        // Confirmation modal behavior for submission
+        (function() {
+            const confirmModal = document.getElementById('confirmModal');
+            const cancelConfirmBtn = document.getElementById('cancelConfirm');
+            const proceedConfirmBtn = document.getElementById('proceedConfirm');
+            const confirmOverlay = document.getElementById('confirmOverlay');
+            const form = document.querySelector('.scholarship-form-form');
 
-    if(cancelConfirmBtn){
-        cancelConfirmBtn.addEventListener('click', function(){
-            closeConfirmModal();
-        });
-    }
-    if(confirmOverlay){
-        confirmOverlay.addEventListener('click', function(){
-            closeConfirmModal();
-        });
-    }
-    if(proceedConfirmBtn && form){
-        proceedConfirmBtn.addEventListener('click', function(){
-            closeConfirmModal();
-            form.submit();
-        });
-    }
-    document.addEventListener('keydown', function(e){
-        if(e.key === 'Escape' && confirmModal && confirmModal.classList.contains('active')){
-            closeConfirmModal();
-        }
-    });
-})();
-</script>
+            function closeConfirmModal() {
+                if (confirmModal) {
+                    confirmModal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+
+            if (cancelConfirmBtn) {
+                cancelConfirmBtn.addEventListener('click', function() {
+                    closeConfirmModal();
+                });
+            }
+            if (confirmOverlay) {
+                confirmOverlay.addEventListener('click', function() {
+                    closeConfirmModal();
+                });
+            }
+            if (proceedConfirmBtn && form) {
+                proceedConfirmBtn.addEventListener('click', function() {
+                    closeConfirmModal();
+                    form.submit();
+                });
+            }
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && confirmModal && confirmModal.classList.contains('active')) {
+                    closeConfirmModal();
+                }
+            });
+        })();
+    </script>
 </body>
+
 </html>

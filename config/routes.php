@@ -375,9 +375,27 @@ $routes->add('students/my_application', new Route(
     [],
     ['GET']
 ));
+$routes->add('students/my_application_legacy', new Route(
+    '/students/my_application',
+    ['_script' => __DIR__ . '/../public/students/my_application.php'],
+    [],
+    [],
+    '',
+    [],
+    ['GET']
+));
 $routes->add('students/process-application', new Route(
     '/students/process-application',
     ['_script' => __DIR__ . '/../public/students/process_application.php'],
+    [],
+    [],
+    '',
+    [],
+    ['POST']
+));
+$routes->add('students/process-renewal', new Route(
+    '/students/process-renewal',
+    ['_script' => __DIR__ . '/../public/students/process_renewal.php'],
     [],
     [],
     '',

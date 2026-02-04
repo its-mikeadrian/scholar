@@ -40,13 +40,14 @@ if (!is_dir($upload_dir)) {
 }
 
 // Function to safely upload file
-function upload_file($file_key, $upload_dir, $user_id) {
+function upload_file($file_key, $upload_dir, $user_id)
+{
     if (!isset($_FILES[$file_key]) || $_FILES[$file_key]['error'] === UPLOAD_ERR_NO_FILE) {
         return null;
     }
 
     $file = $_FILES[$file_key];
-    
+
     // Check for upload errors
     if ($file['error'] !== UPLOAD_ERR_OK) {
         error_log('File upload error for ' . $file_key . ': Error code ' . $file['error']);
@@ -91,7 +92,7 @@ $voters_cert_file = upload_file('voters_cert_file', $upload_dir, $user_id);
 try {
     // Get PDO connection
     $pdo = get_db_connection();
-    
+
     // First, ensure the table exists
     $create_table_sql = "CREATE TABLE IF NOT EXISTS scholarship_applications (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -118,6 +119,8 @@ try {
         barangay_indigency_file VARCHAR(255) DEFAULT NULL,
         voters_cert_file VARCHAR(255) DEFAULT NULL,
         status ENUM('pending','approved','rejected','incomplete') NOT NULL DEFAULT 'pending',
+        is_paid TINYINT(1) NOT NULL DEFAULT 0,
+        paid_date DATE DEFAULT NULL,
         submission_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
         notes TEXT DEFAULT NULL,
@@ -126,10 +129,10 @@ try {
         KEY idx_submission_date (submission_date),
         CONSTRAINT fk_applications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-    
+
     $pdo->exec($create_table_sql);
     error_log('Scholarship applications table created or already exists');
-    
+
     // Prepare data with proper sanitization
     $academic_level = htmlspecialchars($_POST['academic_level'] ?? '', ENT_QUOTES, 'UTF-8');
     $semester = htmlspecialchars($_POST['semester'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -154,67 +157,152 @@ try {
         throw new Exception('Required fields are missing');
     }
 
-    // Insert into database
-    $sql = "INSERT INTO scholarship_applications (
-        user_id, academic_level, semester, first_name, middle_name, last_name,
-        date_of_birth, age, cellphone_number, sex, mothers_maiden_name,
-        mothers_occupation, fathers_name, fathers_occupation, street_address,
-        house_number, barangay, municipality, cor_coe_file, cert_grades_file,
-        barangay_indigency_file, voters_cert_file, status
-    ) VALUES (
-        :user_id, :academic_level, :semester, :first_name, :middle_name, :last_name,
-        :date_of_birth, :age, :cellphone_number, :sex, :mothers_maiden_name,
-        :mothers_occupation, :fathers_name, :fathers_occupation, :street_address,
-        :house_number, :barangay, :municipality, :cor_coe_file, :cert_grades_file,
-        :barangay_indigency_file, :voters_cert_file, 'pending'
-    )";
+    $stmt = $pdo->prepare("SELECT * FROM scholarship_applications WHERE user_id = ? ORDER BY submission_date DESC LIMIT 1");
+    $stmt->execute([$user_id]);
+    $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $stmt = $pdo->prepare($sql);
-    $result = $stmt->execute([
-        ':user_id' => $user_id,
-        ':academic_level' => $academic_level,
-        ':semester' => $semester,
-        ':first_name' => $first_name,
-        ':middle_name' => $middle_name,
-        ':last_name' => $last_name,
-        ':date_of_birth' => !empty($date_of_birth) ? $date_of_birth : null,
-        ':age' => $age,
-        ':cellphone_number' => $cellphone_number,
-        ':sex' => $sex,
-        ':mothers_maiden_name' => $mothers_maiden_name,
-        ':mothers_occupation' => $mothers_occupation,
-        ':fathers_name' => $fathers_name,
-        ':fathers_occupation' => $fathers_occupation,
-        ':street_address' => $street_address,
-        ':house_number' => $house_number,
-        ':barangay' => $barangay,
-        ':municipality' => $municipality,
-        ':cor_coe_file' => $cor_coe_file,
-        ':cert_grades_file' => $cert_grades_file,
-        ':barangay_indigency_file' => $barangay_indigency_file,
-        ':voters_cert_file' => $voters_cert_file
-    ]);
+    $is_edit_incomplete = $existing && strtolower((string)($existing['status'] ?? '')) === 'incomplete';
+    if ($is_edit_incomplete) {
+        $application_id = (int)($existing['id'] ?? 0);
+        $cor_coe_file = $cor_coe_file ?: ($existing['cor_coe_file'] ?? null);
+        $cert_grades_file = $cert_grades_file ?: ($existing['cert_grades_file'] ?? null);
+        $barangay_indigency_file = $barangay_indigency_file ?: ($existing['barangay_indigency_file'] ?? null);
+        $voters_cert_file = $voters_cert_file ?: ($existing['voters_cert_file'] ?? null);
 
-    if (!$result) {
-        throw new Exception('Failed to execute insert statement');
+        $sql = "UPDATE scholarship_applications SET
+            academic_level = :academic_level,
+            semester = :semester,
+            first_name = :first_name,
+            middle_name = :middle_name,
+            last_name = :last_name,
+            date_of_birth = :date_of_birth,
+            age = :age,
+            cellphone_number = :cellphone_number,
+            sex = :sex,
+            mothers_maiden_name = :mothers_maiden_name,
+            mothers_occupation = :mothers_occupation,
+            fathers_name = :fathers_name,
+            fathers_occupation = :fathers_occupation,
+            street_address = :street_address,
+            house_number = :house_number,
+            barangay = :barangay,
+            municipality = :municipality,
+            cor_coe_file = :cor_coe_file,
+            cert_grades_file = :cert_grades_file,
+            barangay_indigency_file = :barangay_indigency_file,
+            voters_cert_file = :voters_cert_file,
+            status = 'pending',
+            resubmitted_from_incomplete = 1,
+            incomplete_reason = NULL,
+            rejection_reason = NULL,
+            updated_at = NOW()
+        WHERE id = :id AND user_id = :user_id";
+
+        $params = [
+            ':user_id' => $user_id,
+            ':id' => $application_id,
+            ':academic_level' => $academic_level,
+            ':semester' => $semester,
+            ':first_name' => $first_name,
+            ':middle_name' => $middle_name !== '' ? $middle_name : null,
+            ':last_name' => $last_name,
+            ':date_of_birth' => !empty($date_of_birth) ? $date_of_birth : null,
+            ':age' => $age,
+            ':cellphone_number' => $cellphone_number,
+            ':sex' => $sex,
+            ':mothers_maiden_name' => $mothers_maiden_name,
+            ':mothers_occupation' => $mothers_occupation,
+            ':fathers_name' => $fathers_name,
+            ':fathers_occupation' => $fathers_occupation,
+            ':street_address' => $street_address,
+            ':house_number' => $house_number,
+            ':barangay' => $barangay,
+            ':municipality' => $municipality,
+            ':cor_coe_file' => $cor_coe_file,
+            ':cert_grades_file' => $cert_grades_file,
+            ':barangay_indigency_file' => $barangay_indigency_file,
+            ':voters_cert_file' => $voters_cert_file
+        ];
+
+        try {
+            $stmt = $pdo->prepare($sql);
+            $result = $stmt->execute($params);
+        } catch (PDOException $ex) {
+            try {
+                $pdo->exec("ALTER TABLE scholarship_applications ADD COLUMN resubmitted_from_incomplete TINYINT(1) NOT NULL DEFAULT 0");
+            } catch (Exception $ex2) {
+            }
+            $stmt = $pdo->prepare($sql);
+            $result = $stmt->execute($params);
+        }
+
+        if (!$result) {
+            throw new Exception('Failed to execute update statement');
+        }
+
+        error_log('Application updated successfully: ID=' . $application_id . ', User=' . $user_id);
+        $_SESSION['success_message'] = 'Application updated successfully!';
+    } else {
+        // Insert into database
+        $sql = "INSERT INTO scholarship_applications (
+            user_id, academic_level, semester, first_name, middle_name, last_name,
+            date_of_birth, age, cellphone_number, sex, mothers_maiden_name,
+            mothers_occupation, fathers_name, fathers_occupation, street_address,
+            house_number, barangay, municipality, cor_coe_file, cert_grades_file,
+            barangay_indigency_file, voters_cert_file, status
+        ) VALUES (
+            :user_id, :academic_level, :semester, :first_name, :middle_name, :last_name,
+            :date_of_birth, :age, :cellphone_number, :sex, :mothers_maiden_name,
+            :mothers_occupation, :fathers_name, :fathers_occupation, :street_address,
+            :house_number, :barangay, :municipality, :cor_coe_file, :cert_grades_file,
+            :barangay_indigency_file, :voters_cert_file, 'pending'
+        )";
+
+        $stmt = $pdo->prepare($sql);
+        $result = $stmt->execute([
+            ':user_id' => $user_id,
+            ':academic_level' => $academic_level,
+            ':semester' => $semester,
+            ':first_name' => $first_name,
+            ':middle_name' => $middle_name,
+            ':last_name' => $last_name,
+            ':date_of_birth' => !empty($date_of_birth) ? $date_of_birth : null,
+            ':age' => $age,
+            ':cellphone_number' => $cellphone_number,
+            ':sex' => $sex,
+            ':mothers_maiden_name' => $mothers_maiden_name,
+            ':mothers_occupation' => $mothers_occupation,
+            ':fathers_name' => $fathers_name,
+            ':fathers_occupation' => $fathers_occupation,
+            ':street_address' => $street_address,
+            ':house_number' => $house_number,
+            ':barangay' => $barangay,
+            ':municipality' => $municipality,
+            ':cor_coe_file' => $cor_coe_file,
+            ':cert_grades_file' => $cert_grades_file,
+            ':barangay_indigency_file' => $barangay_indigency_file,
+            ':voters_cert_file' => $voters_cert_file
+        ]);
+
+        if (!$result) {
+            throw new Exception('Failed to execute insert statement');
+        }
+
+        $application_id = $pdo->lastInsertId();
+        error_log('Application submitted successfully: ID=' . $application_id . ', User=' . $user_id);
+
+        $_SESSION['success_message'] = 'Application submitted successfully!';
     }
-
-    $application_id = $pdo->lastInsertId();
-    error_log('Application submitted successfully: ID=' . $application_id . ', User=' . $user_id);
-
-    $_SESSION['success_message'] = 'Application submitted successfully!';
-    header('Location: ' . route_url('students/my_application'));
+    header('Location: ' . route_url('students/my-application'));
     exit;
-
 } catch (PDOException $e) {
     error_log('Database error: ' . $e->getMessage());
     $_SESSION['error_message'] = 'Database error: ' . $e->getMessage();
-    header('Location: ' . route_url('students/application_form'));
+    header('Location: ' . route_url('students/application'));
     exit;
 } catch (Exception $e) {
     error_log('Application submission error: ' . $e->getMessage());
     $_SESSION['error_message'] = 'Error submitting application: ' . $e->getMessage();
-    header('Location: ' . route_url('students/application_form'));
+    header('Location: ' . route_url('students/application'));
     exit;
 }
-?>
